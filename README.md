@@ -5,6 +5,6 @@
 
 <a align="center" href="https://" target="_blank">Link to ONLINE CALCULATOR</a>
 
-> Based on https://github.com/JavierOlmedo/OWASP-Calculator
+Based on https://github.com/JavierOlmedo/OWASP-Calculator | Modified by <a href="https://github.com/Zylesto" target="_blank"><span>Felix Berger</span></a>
 
 </div>
