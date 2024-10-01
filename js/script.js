@@ -122,8 +122,15 @@ function calculate(){
       +$("#fd").val(),
       +$("#rd").val(),
       +$("#nc").val(),
-      +$("#pv").val()
-  );
+      +$("#pv").val());
+  dataset.push($("#lc").val());
+  dataset.push($("#li").val());
+  dataset.push($("#lav").val());
+  dataset.push($("#lac").val());
+  dataset.push($("#fd").val());
+  dataset.push($("#rd").val());
+  dataset.push($("#nc").val());
+  dataset.push($("#pv").val());
   
   var LS = (LS/8).toFixed(3);
   var IS = IS.toFixed(3);
