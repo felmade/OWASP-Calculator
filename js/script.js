@@ -114,25 +114,19 @@ function calculate(){
   dataset.push($("#id").val());
 
   // Get values TECHNICAL IMPACT FACTORS and BUSINESS IMPACT FACTORS
-  IS = + $("#lc").val() +
-  + $("#li").val() +
-  + $("#lav").val() +
-  + $("#lac").val() +
-  + $("#fd").val() +
-  + $("#rd").val() +
-  + $("#nc").val() +
-  + $("#pv").val() + 0;
-  dataset.push($("#lc").val());
-  dataset.push($("#li").val());
-  dataset.push($("#lav").val());
-  dataset.push($("#lac").val());
-  dataset.push($("#fd").val());
-  dataset.push($("#rd").val());
-  dataset.push($("#nc").val());
-  dataset.push($("#pv").val());
+  IS = Math.max(
+      +$("#lc").val(),
+      +$("#li").val(),
+      +$("#lav").val(),
+      +$("#lac").val(),
+      +$("#fd").val(),
+      +$("#rd").val(),
+      +$("#nc").val(),
+      +$("#pv").val()
+  );
   
   var LS = (LS/8).toFixed(3);
-  var IS = (IS/8).toFixed(3);
+  var IS = IS.toFixed(3);
 
   var FLS = getRisk(LS);
   var FIS = getRisk(IS);
