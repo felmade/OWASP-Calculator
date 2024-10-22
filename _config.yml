@@ -1,0 +1,11 @@
+title: OWASP-Calculator
+description: OWASP-Calculator
+baseurl: ""
+url: ""
+theme: jekyll-theme-primer
+
+# Build-Einstellungen
+source: .
+destination: ./_site
+sass:
+  sass_dir: assets/css

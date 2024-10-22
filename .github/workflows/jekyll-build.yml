@@ -19,12 +19,19 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2.x'
+          ruby-version: '3.0'
 
-      - name: Install Bundler and dependencies
+      - name: Install dependencies
         run: |
+          gem install bundler
           bundle install
 
       - name: Build Jekyll Site
         run: |
-          bundle exec jekyll build --source . --destination ./_site
+          bundle exec jekyll build --source . --destination ../../_site
+
+      - name: Upload _site folder
+        uses: actions/upload-artifact@v3
+        with:
+          name: site
+          path: ../../_site
