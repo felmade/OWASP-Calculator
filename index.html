@@ -89,6 +89,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much data could be disclosed and how sensitive is it?">Loss of confidentiality</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="lc" name="lc" onchange="calculate()">
+            <option value="0">No data disclosed (0)</option>
             <option value="2">Minimal non-sensitive data disclosed (2)</option>
             <option value="6">minimal critical data disclosed (6)</option>
             <option value="6">extensive non-sensitive data disclosed (6)</option>
@@ -101,6 +102,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much data could be corrupted and how damaged is it?">Loss of integrity</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="li" name="li" onchange="calculate()">
+            <option value="0">No data corrupted (0)</option>
             <option value="1">Minimal slightly corrupt data (1)</option>
             <option value="3">Minimal seriously corrupt data (3)</option>
             <option value="5">Extensive slightly corrupt data (5)</option>
@@ -113,6 +115,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much service could be lost and how vital is it?">Loss of availability</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="lav" name="lav" onchange="calculate()">
+            <option value="0">No service interruption (0)</option>
             <option value="1">Minimal secondary services interrupted (1)</option>
             <option value="5">Minimal primary services interrupted (5)</option>
             <option value="5">Extensive secondary services interrupted (5)</option>
@@ -125,6 +128,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="Are the threat agents' actions traceable to an individual?">Loss of accountability</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="lac" name="lac" onchange="calculate()">
+            <option value="0">Fully accountable (0)</option>
             <option value="1">Fully traceable (1)</option>
             <option value="7">Possibly traceable (7)</option>
             <option value="9">Completely anonymous (9)</option>
@@ -143,6 +147,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How easy is it for this group of threat agents to discover this vulnerability?">Ease of discovery</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="ed" name="ed" onchange="calculate()">
+            <option value="0">Impossible to discover (0)</option>
             <option value="1">Practically impossible (1)</option>
             <option value="3">Difficult (3)</option>
             <option value="7">Easy (7)</option>
@@ -154,6 +159,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How easy is it for this group of threat agents to actually exploit this vulnerability?">Ease of exploit</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="ee" name="ee" onchange="calculate()">
+            <option value="0">No known exploit path (0)</option>
             <option value="1">Theoretical (1)</option>
             <option value="3">Difficult (3)</option>
             <option value="5">Easy (5)</option>
@@ -165,6 +171,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How well known is this vulnerability to this group of threat agents?">Awareness</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="a" name="a" onchange="calculate()">
+            <option value="0">Not known (0)</option>
             <option value="1">Unknown (1)</option>
             <option value="4">Hidden (4)</option>
             <option value="6">Obvious (6)</option>
@@ -176,6 +183,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How likely is an exploit to be detected?">Intrusion detection</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="id" name="id" onchange="calculate()">
+            <option value="0">Detection impossible (0)</option>
             <option value="1">Active detection in application (1)</option>
             <option value="3">Logged and reviewed (3)</option>
             <option value="8">Logged without review (8)</option>
@@ -192,6 +200,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much financial damage will result from an exploit?">Financial damage</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="fd" name="fd" onchange="calculate()">
+            <option value="0">No financial impact (0)</option>
             <option value="1">Less than the cost to fix the vulnerability (1)</option>
             <option value="3">Minor effect on annual profit (3)</option>
             <option value="7">Significant effect on annual profit (7)</option>
@@ -203,6 +212,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="Would an exploit result in reputation damage that would harm the business?">Reputation damage</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="rd" name="rd" onchange="calculate()">
+            <option value="0">No impact on reputation (0)</option>
             <option value="1">Minimal damage (1)</option>
             <option value="4">Loss of major accounts (4)</option>
             <option value="5">Loss of goodwill (5)</option>
@@ -214,6 +224,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much exposure does non-compliance introduce?">Non-compliance</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="nc" name="nc" onchange="calculate()">
+            <option value="0">Fully compliant (0)</option>
             <option value="2">Minor violation (2)</option>
             <option value="5">Clear violation (5)</option>
             <option value="7">High profile violation (7)</option>
@@ -224,6 +235,7 @@
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much personally identifiable information could be disclosed?">Privacy violation</div>
         <div class="col-8">
           <select class="form-control" aria-label=".form-select-sm example" id="pv" name="pv" onchange="calculate()">
+            <option value="0">No personal information disclosed (0)</option>
             <option value="3">One individual (3)</option>
             <option value="5">Hundreds of people (5)</option>
             <option value="7">Thousands of people (7)</option>
@@ -252,7 +264,7 @@
   <!-- CREDITS -->
   <section>
     <div>
-      <b>VECTOR: </b><a id="score" href="https://felmade.github.io/OWASP-Calculator/?vector=(SL:1/M:1/O:0/S:2/ED:1/EE:1/A:1/ID:2/LC:2/LI:1/LAV:1/LAC:1/FD:1/RD:1/NC:2/PV:3)" target="_blank">(SL:1/M:1/O:0/S:2/ED:1/EE:1/A:1/ID:2/LC:2/LI:1/LAV:1/LAC:1/FD:1/RD:1/NC:2/PV:3)</a>
+      <b>VECTOR: </b><a id="score" href="https://felmade.github.io/OWASP-Calculator/?vector=(SL:1/M:1/O:0/S:2/ED:1/EE:1/A:1/ID:2/LC:0/LI:0/LAV:0/LAC:0/FD:0/RD:0/NC:0/PV:0)" target="_blank">(SL:1/M:1/O:0/S:2/ED:1/EE:1/A:1/ID:2/LC:0/LI:0/LAV:0/LAC:0/FD:0/RD:0/NC:0/PV:0)</a>
       <br>
       <a href="#exampleModalCenter" data-toggle="modal">How is Severity Risk calculated?</a>
       <br>
