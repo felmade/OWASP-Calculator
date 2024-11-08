@@ -356,5 +356,3 @@ function updateRiskLevelMapping() {
 
   updateRiskChart([], RS); // Falls notwendig: Chart basierend auf RS aktualisieren
 }
-
-
