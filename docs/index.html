@@ -24,7 +24,18 @@
 <main>
   <section>
     <h1>OWASP Risk Assessment Calculator</h1>
-    <canvas class="riskChart" id="riskChart" height="75"></canvas>
+    <canvas class="riskChart mb-4" id="riskChart" height="75"></canvas>
+
+    <!-- Dropdown mit zusätzlicher Margin-Klasse -->
+    <div class="dropdown mb-3">
+      <select id="configurationSelect" class="form-control mb-3" onchange="updateRiskLevelMapping()">
+        <option value="Default Configuration">Default Configuration</option>
+        <option value="Configuration 1">Configuration 1</option>
+        <option value="Configuration 2">Configuration 2</option>
+        <option value="Configuration 3">Configuration 3</option>
+      </select>
+    </div>
+
     <div class="risk RS">
       <h4>0</h4>
     </div>
@@ -365,6 +376,7 @@
 <!-- SCRIPTS -->
 <script src="js/jquery.min.js"></script>
 <script src="js/Chart.min.js"></script>
+<script src="js/popper.min.js"></script>
 <script src="js/bootstrap.min.js"></script>
 <script src="js/sweetalert.min.js"></script>
 <script src="js/script.js"></script>
