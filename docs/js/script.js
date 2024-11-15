@@ -1,7 +1,8 @@
 "use strict";
 
 // VARIABLES -----------------------
-var riskChart = document.getElementById('riskChart').getContext('2d');
+var riskChartElement = document.getElementById('riskChart');
+var riskChart = riskChartElement ? riskChartElement.getContext('2d') : null;
 
 const colors = [
 'rgba(255, 102, 255)',
@@ -30,25 +31,21 @@ const riskConfigurations = {
     LOW: [0, 3],
     MEDIUM: [3, 6],
     HIGH: [6, 9],
-    CRITICAL: [9, 10]
   },
   'Configuration 1': {
     LOW: [0, 5],
     MEDIUM: [5, 6],
-    HIGH: [6, 7],
-    CRITICAL: [7, 10]
+    HIGH: [6, 9],
   },
   'Configuration 2': {
     LOW: [0, 7.5],
     MEDIUM: [7.5, 8],
     HIGH: [8, 9],
-    CRITICAL: [9, 10]
   },
   'Configuration 3': {
     LOW: [0, 6.5],
     MEDIUM: [6.5, 7],
-    HIGH: [7, 8],
-    CRITICAL: [8, 10]
+    HIGH: [7, 9],
   }
 };
 
@@ -75,20 +72,22 @@ const riskChartOptions = {
 };
 
 // CHARTS -----------------------
-riskChart = new Chart(riskChart, {
-  type: 'radar',
-  data: {
-    labels: [],
-    datasets: [{
-      data: [],
-      pointBackgroundColor: "",
-      backgroundColor: "",
-      borderColor: "",
-      borderWidth: 2
-    }]
-  },
-  options: riskChartOptions
-});
+if (riskChart) {
+  riskChart = new Chart(riskChart, {
+    type: 'radar',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        pointBackgroundColor: "",
+        backgroundColor: "",
+        borderColor: "",
+        borderWidth: 2
+      }]
+    },
+    options: riskChartOptions
+  });
+}
 
 updateRiskChart()
 
@@ -287,7 +286,12 @@ function getUrlParameter(name) {
   return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
 };
 
-function updateRiskChart(dataset, RS){
+function updateRiskChart(dataset, RS) {
+  if (!riskChart) {
+    console.warn('riskChart is not initialized');
+    return; // Verhindert das Fortsetzen der Funktion, wenn riskChart nicht existiert
+  }
+
   var c = 0;
 
   switch (RS) {
@@ -321,38 +325,40 @@ function getRiskThresholds(selectedConfigName) {
   return riskConfigurations[selectedConfigName] || riskConfigurations['Default Configuration'];
 }
 
-function updateRiskLevelMapping() {
-  const selectedConfig = document.getElementById('configurationSelect').value; // Auswahl holen
-  const levels = getRiskThresholds(selectedConfig); // Konfiguration für die Schwellenwerte holen
+function updateRiskLevelMapping(testMode = false, L_score = null, I_score = null, selectedConfig = null) {
+  if (!testMode) {
+    selectedConfig = document.getElementById('configurationSelect').value;
+    L_score = parseFloat($(".LS").text().split(" ")[0]);
+    I_score = parseFloat($(".IS").text().split(" ")[0]);
+  }
 
-  // Likelihood Score (LS) und Impact Score (IS) aus dem Frontend abfragen
-  const L_score = parseFloat($(".LS").text().split(" ")[0]);
-  const I_score = parseFloat($(".IS").text().split(" ")[0]);
+  const levels = getRiskThresholds(selectedConfig);
 
-  // Bestimmen der LS-Klasse basierend auf der Konfiguration
   let L_class;
-  if (L_score <= levels.LOW[1]) L_class = "LOW";
-  else if (L_score <= levels.MEDIUM[1]) L_class = "MEDIUM";
-  else if (L_score <= levels.HIGH[1]) L_class = "HIGH";
-  else L_class = "CRITICAL";
+  if (L_score >= levels.LOW[0] && L_score < levels.LOW[1]) L_class = "LOW";
+  else if (L_score >= levels.MEDIUM[0] && L_score < levels.MEDIUM[1]) L_class = "MEDIUM";
+  else if (L_score >= levels.HIGH[0] && L_score <= levels.HIGH[1]) L_class = "HIGH";
 
-  // Bestimmen der IS-Klasse basierend auf der Konfiguration
   let I_class;
-  if (I_score <= levels.LOW[1]) I_class = "LOW";
-  else if (I_score <= levels.MEDIUM[1]) I_class = "MEDIUM";
-  else if (I_score <= levels.HIGH[1]) I_class = "HIGH";
-  else I_class = "CRITICAL";
+  if (I_score >= levels.LOW[0] && I_score < levels.LOW[1]) I_class = "LOW";
+  else if (I_score >= levels.MEDIUM[0] && I_score < levels.MEDIUM[1]) I_class = "MEDIUM";
+  else if (I_score >= levels.HIGH[0] && I_score <= levels.HIGH[1]) I_class = "HIGH";
 
   console.log(`Config: ${selectedConfig}`);
   console.log(`L_score: ${L_score}, IS_score: ${I_score}`);
   console.log(`L_class: ${L_class}, I_class: ${I_class}`);
 
-  // Finale Kritikalität berechnen und anzeigen
   const RS = getCriticaly(L_class, I_class);
   console.log(`Ergebnis: ${RS}`);
 
-  $(".RS").text(RS); // Kritikalität im Frontend anzeigen
-  $(".RS").attr("class", `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`); // Stil basierend auf Kritikalität anpassen
+  if (testMode) {
+    return { L_class, I_class, RS };
+  }
 
-  updateRiskChart([], RS); // Falls notwendig: Chart basierend auf RS aktualisieren
+  $(".RS").text(RS);
+  $(".RS").attr("class", `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`);
+  updateRiskChart([], RS);
+  calculate();
 }
+
+module.exports = { riskConfigurations, updateRiskLevelMapping };

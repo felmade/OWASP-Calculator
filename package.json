@@ -1,0 +1,26 @@
+{
+  "name": "owasp-calculator",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">\r   <h1>OWASP Risk Assessment Calculator</h1>",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "jsdom"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.6"
+  }
+}
