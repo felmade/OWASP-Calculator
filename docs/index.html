@@ -49,7 +49,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How technically skilled is this group of threat agents?">Skill level</div>
         <div class="col-8">
-          <select class="form-control" id="sl" name="sl" onchange="calculate()">
+          <select class="form-control" id="sl" name="sl" onchange="calculate(); updateRiskLevelMapping()">
             <option value="1">No technical skills (1)</option>
             <option value="3">Some technical skills (3)</option>
             <option value="5">Advanced computer user (5)</option>
@@ -61,7 +61,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How motivated is this group of threat agents to find and exploit this vulnerability?">Motive</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="m" name="m" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="m" name="m" onchange="calculate(); updateRiskLevelMapping()">
             <option value="1">Low or no reward (1)</option>
             <option value="4">Possible reward (4)</option>
             <option value="9">High reward (9)</option>
@@ -71,7 +71,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="What resources and opportunities are required for this group of threat agents to find and exploit this vulnerability?">Opportunity</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="o" name="o" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="o" name="o" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">Full access or expensive resources required (0)</option>
             <option value="4">Special access or resources required (4)</option>
             <option value="7">Some access or resources required (7)</option>
@@ -82,7 +82,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How large is this group of threat agents?">Size</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="s" name="s" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="s" name="s" onchange="calculate(); updateRiskLevelMapping()">
             <option value="2">Developers, System administrators (2)</option>
             <option value="4">Intranet users (4)</option>
             <option value="5">Partners (5)</option>
@@ -99,7 +99,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much data could be disclosed and how sensitive is it?">Loss of confidentiality</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="lc" name="lc" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="lc" name="lc" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">No data disclosed (0)</option>
             <option value="2">Minimal non-sensitive data disclosed (2)</option>
             <option value="6">minimal critical data disclosed (6)</option>
@@ -112,7 +112,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much data could be corrupted and how damaged is it?">Loss of integrity</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="li" name="li" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="li" name="li" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">No data corrupted (0)</option>
             <option value="1">Minimal slightly corrupt data (1)</option>
             <option value="3">Minimal seriously corrupt data (3)</option>
@@ -125,7 +125,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much service could be lost and how vital is it?">Loss of availability</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="lav" name="lav" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="lav" name="lav" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">No service interruption (0)</option>
             <option value="1">Minimal secondary services interrupted (1)</option>
             <option value="5">Minimal primary services interrupted (5)</option>
@@ -138,7 +138,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="Are the threat agents' actions traceable to an individual?">Loss of accountability</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="lac" name="lac" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="lac" name="lac" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">Fully accountable (0)</option>
             <option value="1">Fully traceable (1)</option>
             <option value="7">Possibly traceable (7)</option>
@@ -157,7 +157,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How easy is it for this group of threat agents to discover this vulnerability?">Ease of discovery</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="ed" name="ed" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="ed" name="ed" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">Impossible to discover (0)</option>
             <option value="1">Practically impossible (1)</option>
             <option value="3">Difficult (3)</option>
@@ -169,7 +169,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How easy is it for this group of threat agents to actually exploit this vulnerability?">Ease of exploit</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="ee" name="ee" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="ee" name="ee" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">No known exploit path (0)</option>
             <option value="1">Theoretical (1)</option>
             <option value="3">Difficult (3)</option>
@@ -181,7 +181,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How well known is this vulnerability to this group of threat agents?">Awareness</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="a" name="a" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="a" name="a" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">Not known (0)</option>
             <option value="1">Unknown (1)</option>
             <option value="4">Hidden (4)</option>
@@ -193,7 +193,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How likely is an exploit to be detected?">Intrusion detection</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="id" name="id" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="id" name="id" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">Detection impossible (0)</option>
             <option value="1">Active detection in application (1)</option>
             <option value="3">Logged and reviewed (3)</option>
@@ -210,7 +210,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much financial damage will result from an exploit?">Financial damage</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="fd" name="fd" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="fd" name="fd" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">No financial impact (0)</option>
             <option value="1">Less than the cost to fix the vulnerability (1)</option>
             <option value="3">Minor effect on annual profit (3)</option>
@@ -222,7 +222,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="Would an exploit result in reputation damage that would harm the business?">Reputation damage</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="rd" name="rd" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="rd" name="rd" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">No impact on reputation (0)</option>
             <option value="1">Minimal damage (1)</option>
             <option value="4">Loss of major accounts (4)</option>
@@ -234,7 +234,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much exposure does non-compliance introduce?">Non-compliance</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="nc" name="nc" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="nc" name="nc" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">Fully compliant (0)</option>
             <option value="2">Minor violation (2)</option>
             <option value="5">Clear violation (5)</option>
@@ -245,7 +245,7 @@
       <div class="row">
         <div class="h6 nomargin col-4 d-flex align-items-center" title="How much personally identifiable information could be disclosed?">Privacy violation</div>
         <div class="col-8">
-          <select class="form-control" aria-label=".form-select-sm example" id="pv" name="pv" onchange="calculate()">
+          <select class="form-control" aria-label=".form-select-sm example" id="pv" name="pv" onchange="calculate(); updateRiskLevelMapping()">
             <option value="0">No personal information disclosed (0)</option>
             <option value="3">One individual (3)</option>
             <option value="5">Hundreds of people (5)</option>
