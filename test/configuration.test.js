@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const { riskConfigurations, updateRiskLevelMapping } = require('../docs/js/script.js');
+import { riskConfigurations, updateRiskLevelMapping } from '../docs/js/script.js';
 
 describe('updateRiskLevelMapping() with testMode enabled', () => {
     let originalLog;
