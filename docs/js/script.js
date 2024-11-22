@@ -26,7 +26,7 @@ const threats = ["Skills required", "Motive", "Opportunity", "Population Size",
 "Financial damage", "Reputation damage", "Non-Compliance", "Privacy violation"
 ];
 
-const riskConfigurations = {
+export const riskConfigurations = {
   'Default Configuration': {
     LOW: [0, 3],
     MEDIUM: [3, 6],
@@ -115,126 +115,107 @@ function loadVectors(vector) {
   calculate()
 }
 
-function calculate(){
-  var LS = 0;
-  var IS = 0;
-  var dataset = [];
-  var score = '';
+function calculate() {
   deleteClass();
 
-  // Get values THREAT AGENT FACTORS and VULNERABILITY FACTORS
-  LS = + $("#sl").val() +
-  + $("#m").val() +
-  + $("#o").val() +
-  + $("#s").val() +
-  + $("#ed").val() +
-  + $("#ee").val() +
-  + $("#a").val() +
-  + $("#id").val() + 0;
-  dataset.push($("#sl").val());
-  dataset.push($("#m").val());
-  dataset.push($("#o").val());
-  dataset.push($("#s").val());
-  dataset.push($("#ed").val());
-  dataset.push($("#ee").val());
-  dataset.push($("#a").val());
-  dataset.push($("#id").val());
+  const selectedConfig = document.getElementById('configurationSelect').value;
 
-  // Get values TECHNICAL IMPACT FACTORS and BUSINESS IMPACT FACTORS
-  IS = Math.max(
-      +$("#lc").val(),
-      +$("#li").val(),
-      +$("#lav").val(),
-      +$("#lac").val(),
-      +$("#fd").val(),
-      +$("#rd").val(),
-      +$("#nc").val(),
-      +$("#pv").val());
-  dataset.push($("#lc").val());
-  dataset.push($("#li").val());
-  dataset.push($("#lav").val());
-  dataset.push($("#lac").val());
-  dataset.push($("#fd").val());
-  dataset.push($("#rd").val());
-  dataset.push($("#nc").val());
-  dataset.push($("#pv").val());
-  
-  var LS = (LS/8).toFixed(3);
-  var IS = IS.toFixed(3);
+  const threatAgentFactors = ['sl', 'm', 'o', 's', 'ed', 'ee', 'a', 'id'];
+  const technicalImpactFactors = ['lc', 'li', 'lav', 'lac', 'fd', 'rd', 'nc', 'pv'];
 
-  var FLS = getRisk(LS);
-  var FIS = getRisk(IS);
+  const LS = calculateAverage(threatAgentFactors).toFixed(3);
+  const IS = calculateMax(technicalImpactFactors).toFixed(3);
 
-  $(".LS").text(LS + " " + FLS);
-  $(".IS").text(IS + " " + FIS);
+  const FLS = getRisk(LS, selectedConfig);
+  const FIS = getRisk(IS, selectedConfig);
 
-  score = '(';
-  score = score + 'SL:' + $("#sl").val() + '/';
-  score = score + 'M:' + $("#m").val() + '/';
-  score = score + 'O:' + $("#o").val() + '/';
-  score = score + 'S:' + $("#s").val() + '/';
-  score = score + 'ED:' + $("#ed").val() + '/';
-  score = score + 'EE:' + $("#ee").val() + '/';
-  score = score + 'A:' + $("#a").val() + '/';
-  score = score + 'ID:' + $("#id").val() + '/';
-  score = score + 'LC:' + $("#lc").val() + '/';
-  score = score + 'LI:' + $("#li").val() + '/';
-  score = score + 'LAV:' + $("#lav").val() + '/';
-  score = score + 'LAC:' + $("#lac").val() + '/';
-  score = score + 'FD:' + $("#fd").val() + '/';
-  score = score + 'RD:' + $("#rd").val() + '/';
-  score = score + 'NC:' + $("#nc").val() + '/';
-  score = score + 'PV:' + $("#pv").val();
-  score = score + ')';
+  updateDisplay('.LS', LS, FLS);
+  updateDisplay('.IS', IS, FIS);
+
+  const dataset = [...getValues(threatAgentFactors), ...getValues(technicalImpactFactors)];
+  const score = generateScore(threatAgentFactors, technicalImpactFactors);
+
   $('#score').text(score);
-  $("#score").attr("href", "https://javierolmedo.github.io/OWASP-Calculator/?vector=" + score);
+  $('#score').attr(
+      'href',
+      `https://felmade.github.io/OWASP-Calculator/?vector=${score}`
+  );
 
-  if(getRisk(LS) == "LOW"){
-      $(".LS").addClass("classNote");
-  } else if (getRisk(LS) == "MEDIUM"){
-      $(".LS").addClass("classMedium");
-  } else {
-      $(".LS").addClass("classHigh");
-  }
+  const RS = getCriticaly(FLS, FIS);
+  updateRiskLevel('.RS', RS);
 
-  if(getRisk(IS) == "LOW"){
-      $(".IS").addClass("classNote");
-  } else if (getRisk(IS) == "MEDIUM"){
-      $(".IS").addClass("classMedium");
-  } else {
-      $(".IS").addClass("classHigh");
-  }
-
-  //FINAL
-  var RS = getCriticaly(FLS, FIS);
-  if(RS == "NOTE"){
-      $(".RS").text(RS);
-      $(".RS").addClass("classNote");
-  } else if (RS == "LOW"){
-      $(".RS").text(RS);
-      $(".RS").addClass("classLow");
-  } else if(RS == "MEDIUM"){
-      $(".RS").text(RS);
-      $(".RS").addClass("classMedium");
-  } else if(RS == "HIGH"){
-      $(".RS").text(RS);
-      $(".RS").addClass("classHigh");
-  } else if(RS == "CRITICAL"){
-      $(".RS").text(RS);
-      $(".RS").addClass("classCritical");
-  } else {
-      $(".RS").text(RS);
-      $(".RS").addClass("classNote");
-  }
-
-  updateRiskChart(dataset, RS)
+  updateRiskChart(dataset, RS);
 }
 
-function getRisk(score){
-  if(score == 0) return 'NOTE';
-  if(score < 3) return 'LOW';
-  if(score < 6) return 'MEDIUM';
-  if(score <= 9) return 'HIGH';
+
+function calculateAverage(factors) {
+  const values = getValues(factors);
+  const sum = values.reduce((acc, val) => acc + parseFloat(val || 0), 0);
+  return sum / factors.length;
+}
+
+function calculateMax(factors) {
+  const values = getValues(factors);
+  return Math.max(...values.map(val => parseFloat(val || 0)));
+}
+
+function getValues(factors) {
+  return factors.map(factor => $(`#${factor}`).val());
+}
+
+function updateDisplay(selector, value, riskLevel) {
+  $(selector).text(`${value} ${riskLevel}`);
+  $(selector).removeClass('classNote classLow classMedium classHigh classCritical');
+
+  switch (riskLevel) {
+    case 'LOW':
+      $(selector).addClass('classLow');
+      break;
+    case 'MEDIUM':
+      $(selector).addClass('classMedium');
+      break;
+    case 'HIGH':
+      $(selector).addClass('classHigh');
+      break;
+    case 'CRITICAL':
+      $(selector).addClass('classCritical');
+      break;
+    default:
+      $(selector).addClass('classNote');
+      break;
+  }
+}
+
+function generateScore(threatAgentFactors, technicalImpactFactors) {
+  const allFactors = [...threatAgentFactors, ...technicalImpactFactors];
+  return allFactors
+      .map(factor => `${factor.toUpperCase()}:${$(`#${factor}`).val()}`)
+      .join('/');
+}
+
+function updateRiskLevel(selector, riskLevel) {
+  const classes = {
+    NOTE: 'classNote',
+    LOW: 'classLow',
+    MEDIUM: 'classMedium',
+    HIGH: 'classHigh',
+    CRITICAL: 'classCritical',
+  };
+
+  $(selector).text(riskLevel);
+  $(selector).removeClass(Object.values(classes).join(' '));
+  $(selector).addClass(classes[riskLevel] || 'classNote');
+}
+
+
+function getRisk(score, selectedConfig = 'Default Configuration') {
+  const thresholds = getRiskThresholds(selectedConfig);
+
+  if (score >= thresholds.LOW[0] && score < thresholds.LOW[1]) return 'LOW';
+  if (score >= thresholds.MEDIUM[0] && score < thresholds.MEDIUM[1]) return 'MEDIUM';
+  if (score >= thresholds.HIGH[0] && score <= thresholds.HIGH[1]) return 'HIGH';
+
+  return 'NOTE'; // Fallback
 }
 
 // Calculate final Risk Serverity
@@ -325,7 +306,7 @@ function getRiskThresholds(selectedConfigName) {
   return riskConfigurations[selectedConfigName] || riskConfigurations['Default Configuration'];
 }
 
-function updateRiskLevelMapping(testMode = false, L_score = null, I_score = null, selectedConfig = null) {
+export function updateRiskLevelMapping(testMode = false, L_score = null, I_score = null, selectedConfig = null) {
   if (!testMode) {
     selectedConfig = document.getElementById('configurationSelect').value;
     L_score = parseFloat($(".LS").text().split(" ")[0]);
@@ -358,7 +339,21 @@ function updateRiskLevelMapping(testMode = false, L_score = null, I_score = null
   $(".RS").text(RS);
   $(".RS").attr("class", `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`);
   updateRiskChart([], RS);
-  calculate();
 }
 
-module.exports = { riskConfigurations, updateRiskLevelMapping };
+const isTestEnvironment = typeof window !== 'undefined' && window.IS_TEST_ENV;
+
+if (!isTestEnvironment) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const configSelect = document.getElementById('configurationSelect');
+    if (configSelect) {
+      configSelect.addEventListener('change', () => {
+        calculate();
+        updateRiskLevelMapping();
+      });
+    }
+  });
+}
+
+window.calculate = calculate;
+window.updateRiskLevelMapping = updateRiskLevelMapping
