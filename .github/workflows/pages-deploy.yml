@@ -40,8 +40,13 @@ jobs:
       - name: List deploy directory contents
         run: ls -la .
 
+      - name: Verify publish directory
+        run: |
+          echo "Contents of publish_dir:"
+          ls -la ./  # Stelle sicher, dass die zu veröffentlichenden Dateien hier sind
+
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir:
+          publish_dir: ./  # Setze das Veröffentlichungsverzeichnis auf das Stammverzeichnis
