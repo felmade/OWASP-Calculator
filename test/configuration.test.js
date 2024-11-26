@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { riskConfigurations, updateRiskLevelMapping } from '../docs/js/script.js';
+import { riskConfigurations, updateRiskLevelMapping } from '../js/script.js';
 
 describe('updateRiskLevelMapping() with testMode enabled', () => {
     let originalLog;
