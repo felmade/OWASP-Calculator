@@ -451,5 +451,4 @@ export function updateRiskLevelMapping(testMode = false, L_score = null, I_score
 
   $(".RS").text(RS);
   $(".RS").attr("class", `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`);
-  // Removed updateRiskChart([], RS) to prevent overwriting dataset
 }
