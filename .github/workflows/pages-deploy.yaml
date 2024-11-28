@@ -1,74 +1,41 @@
-name: Build, Test, and Deploy
+name: Build and Deploy
 
 on:
   push:
     branches:
-      - '**'  # Reagiert auf Pushs zu allen Branches
-  pull_request:
-    branches:
-      - '**'  # Reagiert auf Pull Requests zu allen Branches
-  workflow_dispatch:  # Ermöglicht manuelles Auslösen des Workflows
+      - master
+  workflow_dispatch:
 
 permissions:
-  contents: write  # Notwendig für den Deploy-Schritt
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Schritt 1: Repository auschecken
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Holt die gesamte Historie, falls benötigt
 
-      # Schritt 2: Cache der Node.js-Module
-      - name: Cache Node.js modules
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      # Schritt 3: Abhängigkeiten installieren
       - name: Install dependencies
         run: npm install
 
-      # Schritt 4: Tests ausführen
       - name: Run tests
         run: npm test
 
-      # Schritt 5: Build-Schritt (hier nur ein Kopierbefehl)
       - name: Prepare publish directory
         run: |
-          mkdir -p public
+          mkdir public
           cp index.html public/
-          cp -r assets public/
           cp -r css public/
-          cp -r img public/
           cp -r js public/
+          cp -r img public/
+          cp -r assets public/
 
-      # Schritt 6: Verzeichnisinhalt auflisten (zur Debugging-Zwecken)
-      - name: List deploy directory contents
-        run: ls -la ./public
-
-      # Schritt 7: Bereitstellen auf GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          publish_dir: public
+          publish_branch: gh-pages
           force_orphan: true
-          exclude_assets: |
-            .github
-            .idea
-            node_modules
-            package.json
-            package-lock.json
-            README.md
-            LICENSE
-            External Libraries
-            Scratches
-            Consoles
