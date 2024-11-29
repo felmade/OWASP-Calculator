@@ -105,8 +105,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Call calculate() to initialize the chart with data
-  calculate();
+  // Load the risk configuration from the URL if present
+  const riskConfigParam = getUrlParameter('riskConfig');
+  if (riskConfigParam) {
+    loadRiskConfigFromUrl(riskConfigParam);
+    calculate(); // Recalculate with the new configuration
+  } else {
+    calculate(); // Initial calculation without URL configuration
+  }
+
+  // Add event listener for the dropdown menu
+  const configSelect = document.getElementById('configurationSelect');
+  if (configSelect) {
+    configSelect.addEventListener('change', () => {
+      calculate();
+    });
+  }
 
   // Load vectors from URL parameter if present
   if (getUrlParameter('vector')) {
@@ -120,15 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
       element.addEventListener('change', calculate);
     }
   });
-
-  // Add event listener to the configuration select element
-  const configSelect = document.getElementById('configurationSelect');
-  if (configSelect) {
-    configSelect.addEventListener('change', () => {
-      calculate();
-      // Removed updateRiskLevelMapping() to prevent overwriting dataset
-    });
-  }
 });
 
 // Make functions accessible in the global scope
@@ -160,7 +165,8 @@ function loadVectors(vector) {
  * Calculates the risk scores and updates the display and chart accordingly.
  */
 function calculate() {
-  const selectedConfig = document.getElementById('configurationSelect').value;
+  const configSelect = document.getElementById('configurationSelect');
+  const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
   const dataset = [];
   const threatAgentFactors = ['sl', 'm', 'o', 's', 'ed', 'ee', 'a', 'id'];
   const technicalImpactFactors = ['lc', 'li', 'lav', 'lac', 'fd', 'rd', 'nc', 'pv'];
@@ -451,4 +457,52 @@ export function updateRiskLevelMapping(testMode = false, L_score = null, I_score
 
   $(".RS").text(RS);
   $(".RS").attr("class", `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`);
+}
+
+/**
+ * Loads the risk configuration from the URL parameter and adds it as "URL Configuration".
+ * @param {string} riskConfigStr - The risk configuration string from the URL parameter.
+ */
+function loadRiskConfigFromUrl(riskConfigStr) {
+  // Parse the risk configuration string, e.g., "LOW:0-3;MEDIUM:3-6;HIGH:6-9"
+  const configEntries = riskConfigStr.split(';');
+  const customConfig = {};
+
+  configEntries.forEach(function(entry) {
+    const [level, range] = entry.split(':');
+    if (level && range) {
+      const [minStr, maxStr] = range.split('-');
+      const min = parseFloat(minStr);
+      const max = parseFloat(maxStr);
+      if (!isNaN(min) && !isNaN(max)) {
+        customConfig[level.trim().toUpperCase()] = [min, max];
+      }
+    }
+  });
+
+  // If the custom configuration is valid, add it
+  if (Object.keys(customConfig).length > 0) {
+    riskConfigurations['URL Configuration'] = customConfig;
+
+    // Add the new option to the dropdown menu
+    const configSelect = document.getElementById('configurationSelect');
+    if (configSelect) {
+      // Check if "URL Configuration" already exists
+      let exists = false;
+      for (let i = 0; i < configSelect.options.length; i++) {
+        if (configSelect.options[i].value === 'URL Configuration') {
+          exists = true;
+          break;
+        }
+      }
+      if (!exists) {
+        const option = document.createElement('option');
+        option.value = 'URL Configuration';
+        option.text = 'URL Configuration';
+        configSelect.add(option);
+      }
+      // Select the "URL Configuration"
+      configSelect.value = 'URL Configuration';
+    }
+  }
 }
