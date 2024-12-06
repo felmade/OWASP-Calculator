@@ -23,6 +23,7 @@
     "jest-environment-jsdom": "^29.7.0"
   },
   "dependencies": {
-    "chart.js": "^4.4.6"
+    "chart.js": "^4.4.6",
+    "jquery": "^3.7.1"
   }
 }
