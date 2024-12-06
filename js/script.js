@@ -1,13 +1,15 @@
 "use strict";
 
+// ----------------------------------------------------
 // Global variables and configurations for the risk chart and calculations.
+// ----------------------------------------------------
 
 // Canvas and Chart.js variables
 var riskChartElement;
 var riskChartCtx;
 var riskChart;
 
-// Color configurations for different risk levels
+// Color configurations for different risk levels (used for the radar chart)
 const colors = [
   'rgba(255, 102, 255)',    // Critical
   'rgba(255, 0, 0)',        // High
@@ -16,7 +18,6 @@ const colors = [
   'rgba(144, 238, 144)'     // Note
 ];
 
-// Background colors for different risk levels
 const backgrounds = [
   'rgba(255, 102, 255, 0.5)',  // Critical
   'rgba(255, 0, 0, 0.5)',      // High
@@ -32,30 +33,6 @@ const threats = [
   "Loss of confidentiality", "Loss of Integrity", "Loss of Availability", "Loss of Accountability",
   "Financial damage", "Reputation damage", "Non-Compliance", "Privacy violation"
 ];
-
-// Risk configurations with thresholds for different risk levels
-export const riskConfigurations = {
-  'Default Configuration': {
-    LOW: [0, 3],
-    MEDIUM: [3, 6],
-    HIGH: [6, 9],
-  },
-  'Configuration 1': {
-    LOW: [0, 5],
-    MEDIUM: [5, 6],
-    HIGH: [6, 9],
-  },
-  'Configuration 2': {
-    LOW: [0, 7.5],
-    MEDIUM: [7.5, 8],
-    HIGH: [8, 9],
-  },
-  'Configuration 3': {
-    LOW: [0, 6.5],
-    MEDIUM: [6.5, 7],
-    HIGH: [7, 9],
-  }
-};
 
 // IDs of input fields corresponding to threat agent and technical impact factors
 const partials = ["sl", "m", "o", "s", "ed", "ee", "a", "id", "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"];
@@ -80,144 +57,182 @@ const riskChartOptions = {
   }
 };
 
-// Event listeners and initialization.
-// Ensures that DOM elements are loaded before accessing them.
-document.addEventListener('DOMContentLoaded', () => {
-  // Initialize variables that depend on DOM elements
-  riskChartElement = document.getElementById('riskChart');
-  riskChartCtx = riskChartElement ? riskChartElement.getContext('2d') : null;
-
-  // Initialize the chart if the context is available
-  if (riskChartCtx) {
-    riskChart = new Chart(riskChartCtx, {
-      type: 'radar',
-      data: {
-        labels: threats,
-        datasets: [{
-          data: [],
-          pointBackgroundColor: "",
-          backgroundColor: "",
-          borderColor: "",
-          borderWidth: 2
-        }]
-      },
-      options: riskChartOptions
-    });
+// Default risk configurations (used if URL parameters are not provided)
+export const riskConfigurations = {
+  'Default Configuration': {
+    LOW: [0, 3],
+    MEDIUM: [3, 6],
+    HIGH: [6, 9],
+  },
+  'Configuration 1': {
+    LOW: [0, 5],
+    MEDIUM: [5, 6],
+    HIGH: [6, 9],
+  },
+  'Configuration 2': {
+    LOW: [0, 7.5],
+    MEDIUM: [7.5, 8],
+    HIGH: [8, 9],
+  },
+  'Configuration 3': {
+    LOW: [0, 6.5],
+    MEDIUM: [6.5, 7],
+    HIGH: [7, 9],
   }
+};
 
-  // Load the risk configuration from the URL if present
-  const riskConfigParam = getUrlParameter('riskConfig');
-  if (riskConfigParam) {
-    loadRiskConfigFromUrl(riskConfigParam);
-    calculate(); // Recalculate with the new configuration
-  } else {
-    calculate(); // Initial calculation without URL configuration
-  }
-
-  // Add event listener for the dropdown menu
-  const configSelect = document.getElementById('configurationSelect');
-  if (configSelect) {
-    configSelect.addEventListener('change', () => {
-      calculate();
-    });
-  }
-
-  // Load vectors from URL parameter if present
-  if (getUrlParameter('vector')) {
-    loadVectors(getUrlParameter('vector'));
-  }
-
-  // Add event listeners to input fields
-  partials.forEach(function (factor) {
-    const element = document.getElementById(factor);
-    if (element) {
-      element.addEventListener('change', calculate);
-    }
-  });
-});
-
-// Make functions accessible in the global scope
-window.calculate = calculate;
-window.updateRiskLevelMapping = updateRiskLevelMapping;
+// ----------------------------------------------------
+// Helper Functions for Dynamic Classes and Combinations
+// ----------------------------------------------------
 
 /**
- * Loads vectors from a URL parameter and updates input fields accordingly.
- * @param {string} vector - The vector string from the URL parameter.
+ * Parses the `classes` URL parameter for dynamic class intervals.
+ * Returns an array of objects { name, min, max }.
+ * If no parameter is found, returns default classes.
  */
-export function loadVectors(vector) {
-  vector = vector.replace('(', '').replace(')', '');
-  var values = vector.split('/');
+function parseClassesFromUrl() {
+  const classesParam = getUrlParameter('classes');
+  // No classes param uses configuration from configSelect
+  const configSelect = document.getElementById('configurationSelect');
+  const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
+  const thresholds = riskConfigurations[selectedConfig] || riskConfigurations['Default Configuration'];
+  if (!classesParam) {
 
-  if (values.length == 16) {
-    for (let i = 0; i < values.length; i++) {
-      let aux = values[i].split(':');
-      let vectorValue = aux[1];
-      $("#" + partials[i].toLowerCase()).val(vectorValue);
-    }
-  } else {
-    swal("Hey!!", "The vector is not correct, make sure you have copied it correctly", "error");
+    return [
+      { name: 'NOTE', min: -Infinity, max: thresholds.LOW[0] },
+      { name: 'LOW', min: thresholds.LOW[0], max: thresholds.LOW[1] },
+      { name: 'MEDIUM', min: thresholds.MEDIUM[0], max: thresholds.MEDIUM[1] },
+      { name: 'HIGH', min: thresholds.HIGH[0], max: thresholds.HIGH[1] },
+      { name: 'NOTE', min: thresholds.HIGH[1], max: Infinity }
+    ];
   }
 
-  calculate();
+  const classesConfig = [];
+  const classEntries = classesParam.split(';');
+  classEntries.forEach(entry => {
+    const [name, range] = entry.split(':');
+    if (name && range) {
+      const [minStr, maxStr] = range.split('-');
+      const min = parseFloat(minStr);
+      const max = parseFloat(maxStr);
+      if (!isNaN(min) && !isNaN(max)) {
+        classesConfig.push({ name: name.trim().toUpperCase(), min, max });
+      }
+    }
+  });
+
+  if (classesConfig.length === 0) {
+    // If parsing failed, return defaults
+    return [
+      { name: 'NOTE', min: -Infinity, max: thresholds.LOW[0] },
+      { name: 'LOW', min: thresholds.LOW[0], max: thresholds.LOW[1] },
+      { name: 'MEDIUM', min: thresholds.MEDIUM[0], max: thresholds.MEDIUM[1] },
+      { name: 'HIGH', min: thresholds.HIGH[0], max: thresholds.HIGH[1] },
+      { name: 'NOTE', min: thresholds.HIGH[1], max: Infinity }
+    ];
+  }
+
+  return classesConfig;
 }
 
 /**
- * Calculates the risk scores and updates the display and chart accordingly.
+ * Parses the `combination` URL parameter to load combination rules.
+ * Returns a map: { "CLASS1:CLASS2": "RESULTCLASS", ... }.
+ * If no parameter is provided, uses default old logic.
  */
-export function calculate() {
-  const configSelect = document.getElementById('configurationSelect');
-  const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
-  const dataset = [];
-  const threatAgentFactors = ['sl', 'm', 'o', 's', 'ed', 'ee', 'a', 'id'];
-  const technicalImpactFactors = ['lc', 'li', 'lav', 'lac', 'fd', 'rd', 'nc', 'pv'];
-  deleteClass();
+function parseCombinationsFromUrl() {
+  const combinationParam = getUrlParameter('combination');
+  let combinationsMap = {};
 
-  const LS = calculateAverage(threatAgentFactors).toFixed(3);
-  const IS = calculateMax(technicalImpactFactors).toFixed(3);
+  if (!combinationParam) {
+    // Old default combinations
+    combinationsMap = {
+      "LOW:LOW": "NOTE",
+      "LOW:MEDIUM": "LOW",
+      "MEDIUM:MEDIUM": "MEDIUM",
+      "HIGH:HIGH": "CRITICAL",
+      "LOW:HIGH": "MEDIUM",
+      "MEDIUM:HIGH": "HIGH",
+      "HIGH:MEDIUM": "HIGH",
+      "HIGH:LOW": "MEDIUM",
+      "MEDIUM:LOW": "LOW",
+      "NOTE:NOTE": "NOTE"
+    };
+    return combinationsMap;
+  }
 
-  const FLS = getRisk(LS, selectedConfig);
-  const FIS = getRisk(IS, selectedConfig);
+  const comboEntries = combinationParam.split(';');
+  comboEntries.forEach(entry => {
+    const [combo, result] = entry.split('=');
+    if (combo && result) {
+      const [left, right] = combo.split('+');
+      if (left && right) {
+        combinationsMap[`${left.trim().toUpperCase()}:${right.trim().toUpperCase()}`] = result.trim().toUpperCase();
+      }
+    }
+  });
 
-  updateDisplay('.LS', LS, FLS);
-  updateDisplay('.IS', IS, FIS);
+  if (Object.keys(combinationsMap).length === 0) {
+    // If nothing parsed, revert to defaults
+    combinationsMap = {
+      "LOW:LOW": "NOTE",
+      "LOW:MEDIUM": "LOW",
+      "MEDIUM:MEDIUM": "MEDIUM",
+      "HIGH:HIGH": "CRITICAL",
+      "LOW:HIGH": "MEDIUM",
+      "MEDIUM:HIGH": "HIGH",
+      "HIGH:MEDIUM": "HIGH",
+      "HIGH:LOW": "MEDIUM",
+      "MEDIUM:LOW": "LOW",
+      "NOTE:NOTE": "NOTE"
+    };
+  }
 
-  pushValuesToDataset(dataset, threatAgentFactors);
-  pushValuesToDataset(dataset, technicalImpactFactors);
+  return combinationsMap;
+}
 
-  const score = generateScore(threatAgentFactors, technicalImpactFactors);
+/**
+ * Determines which class a given score belongs to using the classesConfig.
+ */
+function getClassForValue(value, classesConfig) {
+  for (let cls of classesConfig) {
+    if (value >= cls.min && value < cls.max) {
+      return cls.name;
+    }
+  }
+  return 'NOTE';
+}
 
-  $('#score').text(score);
-  $('#score').attr(
-      'href',
-      `https://felmade.github.io/OWASP-Calculator/?vector=${score}`
-  );
 
-  const RS = getCriticality(FLS, FIS);
-  updateRiskLevel('.RS', RS);
 
-  updateRiskChart(dataset, RS);
+// ----------------------------------------------------
+// Existing Utility Functions (unchanged)
+// ----------------------------------------------------
+
+/**
+ * Retrieves a URL parameter by name.
+ */
+function getUrlParameter(name) {
+  name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+  var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+  var results = regex.exec(location.search);
+  return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
 }
 
 /**
  * Pushes values from input fields into the dataset array.
- * @param {Array<number>} dataset - The array to hold dataset values.
- * @param {Array<string>} factors - The list of factor IDs to retrieve values from.
  */
 function pushValuesToDataset(dataset, factors) {
   factors.forEach(factor => {
     const element = $(`#${factor}`);
-    if (element.length === 0) {
-      return;
-    }
+    if (element.length === 0) return;
     const value = parseFloat(element.val() || 0);
     dataset.push(value);
   });
 }
 
 /**
- * Calculates the average of the given factors.
- * @param {Array<string>} factors - The list of factor IDs to calculate the average for.
- * @returns {number} - The average value.
+ * Calculates the average of given factors.
  */
 function calculateAverage(factors) {
   const values = getValues(factors);
@@ -226,9 +241,7 @@ function calculateAverage(factors) {
 }
 
 /**
- * Calculates the maximum value among the given factors.
- * @param {Array<string>} factors - The list of factor IDs to find the maximum value for.
- * @returns {number} - The maximum value.
+ * Calculates the max value among given factors.
  */
 function calculateMax(factors) {
   const values = getValues(factors);
@@ -237,18 +250,13 @@ function calculateMax(factors) {
 
 /**
  * Retrieves values from input fields based on factor IDs.
- * @param {Array<string>} factors - The list of factor IDs.
- * @returns {Array<number>} - The list of values corresponding to the factors.
  */
 function getValues(factors) {
   return factors.map(factor => $(`#${factor}`).val());
 }
 
 /**
- * Updates the display elements with calculated scores and risk levels.
- * @param {string} selector - The CSS selector for the element to update.
- * @param {string} value - The calculated value to display.
- * @param {string} riskLevel - The risk level corresponding to the value.
+ * Updates the display element with the calculated scores and risk levels.
  */
 function updateDisplay(selector, value, riskLevel) {
   $(selector).text(`${value} ${riskLevel}`);
@@ -274,10 +282,7 @@ function updateDisplay(selector, value, riskLevel) {
 }
 
 /**
- * Generates a score string based on the factors and their values.
- * @param {Array<string>} threatAgentFactors - The list of threat agent factor IDs.
- * @param {Array<string>} technicalImpactFactors - The list of technical impact factor IDs.
- * @returns {string} - The generated score string.
+ * Generates a score string based on all factors and their values.
  */
 function generateScore(threatAgentFactors, technicalImpactFactors) {
   const allFactors = [...threatAgentFactors, ...technicalImpactFactors];
@@ -288,8 +293,6 @@ function generateScore(threatAgentFactors, technicalImpactFactors) {
 
 /**
  * Updates the risk level display element with the calculated risk severity.
- * @param {string} selector - The CSS selector for the element to update.
- * @param {string} riskLevel - The calculated risk severity.
  */
 function updateRiskLevel(selector, riskLevel) {
   const classes = {
@@ -306,84 +309,21 @@ function updateRiskLevel(selector, riskLevel) {
 }
 
 /**
- * Determines the risk level based on the score and selected configuration.
- * @param {number} score - The calculated score.
- * @param {string} selectedConfig - The selected risk configuration.
- * @returns {string} - The risk level ('LOW', 'MEDIUM', 'HIGH', or 'NOTE').
- */
-function getRisk(score, selectedConfig = 'Default Configuration') {
-  const thresholds = getRiskThresholds(selectedConfig);
-
-  if (score >= thresholds.LOW[0] && score < thresholds.LOW[1]) return 'LOW';
-  if (score >= thresholds.MEDIUM[0] && score < thresholds.MEDIUM[1]) return 'MEDIUM';
-  if (score >= thresholds.HIGH[0] && score <= thresholds.HIGH[1]) return 'HIGH';
-
-  return 'NOTE'; // Fallback
-}
-
-/**
- * Calculates the final risk severity based on likelihood and impact levels.
- * @param {string} L - The likelihood level ('LOW', 'MEDIUM', 'HIGH', or 'NOTE').
- * @param {string} I - The impact level ('LOW', 'MEDIUM', 'HIGH', or 'NOTE').
- * @returns {string} - The final risk severity.
- */
-function getCriticality(L, I) {
-  // NOTE
-  if (L == "LOW" && I == "LOW") return 'NOTE';
-
-  // LOW
-  if ((L == "LOW" && I == "MEDIUM") || (L == "MEDIUM" && I == "LOW")) return 'LOW';
-
-  // MEDIUM
-  if ((L == "LOW" && I == "HIGH") || (L == "MEDIUM" && I == "MEDIUM") || (L == "HIGH" && I == "LOW")) return 'MEDIUM';
-
-  // HIGH
-  if ((L == "HIGH" && I == "MEDIUM") || (L == "MEDIUM" && I == "HIGH")) return 'HIGH';
-
-  // CRITICAL
-  if (L == "HIGH" && I == "HIGH") return 'CRITICAL';
-
-  return 'NOTE'; // Default case
-}
-
-/**
  * Removes CSS classes from display elements before updating them.
  */
 function deleteClass() {
-  // Remove classes from Likelihood Score
   $(".LS").removeClass("classNote classLow classMedium classHigh");
-
-  // Remove classes from Impact Score
   $(".IS").removeClass("classNote classLow classMedium classHigh");
-
-  // Remove classes from Risk Severity
   $(".RS").removeClass("classNote classLow classMedium classHigh classCritical");
 }
 
 /**
- * Retrieves a URL parameter by name.
- * @param {string} name - The name of the URL parameter.
- * @returns {string} - The value of the URL parameter or an empty string if not found.
- */
-function getUrlParameter(name) {
-  name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-  var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-  var results = regex.exec(location.search);
-  return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-}
-
-/**
  * Updates the risk chart with the provided dataset and risk severity.
- * @param {Array<number>} dataset - The data points to display on the chart.
- * @param {string} RS - The risk severity level.
  */
 function updateRiskChart(dataset, RS) {
-  if (!riskChart) {
-    return;
-  }
+  if (!riskChart) return;
 
-  var c = 0;
-
+  let c = 0;
   switch (RS) {
     case "LOW":
       c = 3;
@@ -407,68 +347,30 @@ function updateRiskChart(dataset, RS) {
   riskChart.data.datasets[0].pointBackgroundColor = colors[c];
   riskChart.data.datasets[0].backgroundColor = backgrounds[c];
   riskChart.data.datasets[0].borderColor = colors[c];
-
   riskChart.update();
 }
 
 /**
  * Retrieves the risk thresholds for the selected configuration.
- * @param {string} selectedConfigName - The name of the selected configuration.
- * @returns {Object} - An object containing the LOW, MEDIUM, and HIGH thresholds.
+ * (Only used if we still rely on old configs. This can remain for backward compatibility.)
  */
 function getRiskThresholds(selectedConfigName) {
   return riskConfigurations[selectedConfigName] || riskConfigurations['Default Configuration'];
 }
 
-/**
- * Updates the risk level mapping based on the current scores and configuration.
- * @param {boolean} testMode - If true, the function returns the risk levels without updating the display.
- * @param {number} L_score - The likelihood score.
- * @param {number} I_score - The impact score.
- * @param {string} selectedConfig - The selected risk configuration.
- * @returns {Object|undefined} - Returns an object with risk levels if testMode is true.
- */
-export function updateRiskLevelMapping(testMode = false, L_score = null, I_score = null, selectedConfig = null) {
-  if (!testMode) {
-    selectedConfig = document.getElementById('configurationSelect').value;
-    L_score = parseFloat($(".LS").text().split(" ")[0]);
-    I_score = parseFloat($(".IS").text().split(" ")[0]);
-  }
-
-  const levels = getRiskThresholds(selectedConfig);
-
-  let L_class;
-  if (L_score >= levels.LOW[0] && L_score < levels.LOW[1]) L_class = "LOW";
-  else if (L_score >= levels.MEDIUM[0] && L_score < levels.MEDIUM[1]) L_class = "MEDIUM";
-  else if (L_score >= levels.HIGH[0] && L_score <= levels.HIGH[1]) L_class = "HIGH";
-  else L_class = "NOTE";
-
-  let I_class;
-  if (I_score >= levels.LOW[0] && I_score < levels.LOW[1]) I_class = "LOW";
-  else if (I_score >= levels.MEDIUM[0] && I_score < levels.MEDIUM[1]) I_class = "MEDIUM";
-  else if (I_score >= levels.HIGH[0] && I_score <= levels.HIGH[1]) I_class = "HIGH";
-  else I_class = "NOTE";
-
-  const RS = getCriticality(L_class, I_class);
-
-  if (testMode) {
-    return { L_class, I_class, RS };
-  }
-
-  $(".RS").text(RS);
-  $(".RS").attr("class", `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`);
-}
+// ----------------------------------------------------
+// Functions for URL-based risk configuration
+// ----------------------------------------------------
 
 /**
  * Loads the risk configuration from the URL parameter and adds it as "URL Configuration".
- * @param {string} riskConfigStr - The risk configuration string from the URL parameter.
+ * This is old logic, kept for backward compatibility.
  */
 export function loadRiskConfigFromUrl(riskConfigStr) {
-  // Parse the risk configuration string, e.g., "LOW:0-3;MEDIUM:3-6;HIGH:6-9"
   const configEntries = riskConfigStr.split(';');
   const customConfig = {};
 
-  configEntries.forEach(function(entry) {
+  configEntries.forEach(function (entry) {
     const [level, range] = entry.split(':');
     if (level && range) {
       const [minStr, maxStr] = range.split('-');
@@ -480,14 +382,10 @@ export function loadRiskConfigFromUrl(riskConfigStr) {
     }
   });
 
-  // If the custom configuration is valid, add it
   if (Object.keys(customConfig).length > 0) {
     riskConfigurations['URL Configuration'] = customConfig;
-
-    // Add the new option to the dropdown menu
     const configSelect = document.getElementById('configurationSelect');
     if (configSelect) {
-      // Check if "URL Configuration" already exists
       let exists = false;
       for (let i = 0; i < configSelect.options.length; i++) {
         if (configSelect.options[i].value === 'URL Configuration') {
@@ -501,10 +399,136 @@ export function loadRiskConfigFromUrl(riskConfigStr) {
         option.text = 'URL Configuration';
         configSelect.add(option);
       }
-      // Select the "URL Configuration"
       configSelect.value = 'URL Configuration';
     }
   }
 }
 
-//?riskConfig=LOW:0-4;MEDIUM:4-7;HIGH:7-9
+// ----------------------------------------------------
+// Vector loading
+// ----------------------------------------------------
+
+/**
+ * Loads vectors from a URL parameter and updates input fields accordingly.
+ */
+export function loadVectors(vector) {
+  vector = vector.replace('(', '').replace(')', '');
+  var values = vector.split('/');
+
+  if (values.length == 16) {
+    for (let i = 0; i < values.length; i++) {
+      let aux = values[i].split(':');
+      let vectorValue = aux[1];
+      $("#" + partials[i].toLowerCase()).val(vectorValue);
+    }
+  } else {
+    swal("Error: The provided vector format is invalid. Please verify the input and ensure it is correctly formatted.");
+  }
+
+  calculate();
+}
+
+// ----------------------------------------------------
+// Main Calculation Function with the new logic
+// ----------------------------------------------------
+
+export function calculate() {
+  const configSelect = document.getElementById('configurationSelect');
+  const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
+  const threatAgentFactors = ['sl', 'm', 'o', 's', 'ed', 'ee', 'a', 'id'];
+  const technicalImpactFactors = ['lc', 'li', 'lav', 'lac', 'fd', 'rd', 'nc', 'pv'];
+
+  deleteClass();
+
+  const LS = parseFloat(calculateAverage(threatAgentFactors).toFixed(3));
+  const IS = parseFloat(calculateMax(technicalImpactFactors).toFixed(3));
+
+  // Dynamically load classes and combinations from URL (or use defaults)
+  const classesConfig = parseClassesFromUrl();
+  const combinationsMap = parseCombinationsFromUrl();
+
+  // Determine LS and IS classes based on the dynamic classesConfig
+  const FLS = getClassForValue(LS, classesConfig);
+  const FIS = getClassForValue(IS, classesConfig);
+
+  updateDisplay('.LS', LS.toFixed(3), FLS);
+  updateDisplay('.IS', IS.toFixed(3), FIS);
+
+  const dataset = [];
+  pushValuesToDataset(dataset, threatAgentFactors);
+  pushValuesToDataset(dataset, technicalImpactFactors);
+
+  const score = generateScore(threatAgentFactors, technicalImpactFactors);
+  $('#score').text(score);
+  $('#score').attr('href', `https://felmade.github.io/OWASP-Calculator/?vector=${score}`);
+
+  // Determine the final risk severity (RS) using combinationsMap
+  const combinationKey = `${FLS}:${FIS}`;
+  let RS = combinationsMap[combinationKey];
+  if (!RS) {
+    // If not defined, fallback to a default (e.g., use the Impact class)
+    RS = FIS;
+  }
+
+  updateRiskLevel('.RS', RS);
+  updateRiskChart(dataset, RS);
+}
+
+// ----------------------------------------------------
+// Initialization: DOMContentLoaded
+// ----------------------------------------------------
+
+document.addEventListener('DOMContentLoaded', () => {
+  riskChartElement = document.getElementById('riskChart');
+  riskChartCtx = riskChartElement ? riskChartElement.getContext('2d') : null;
+
+  if (riskChartCtx) {
+    riskChart = new Chart(riskChartCtx, {
+      type: 'radar',
+      data: {
+        labels: threats,
+        datasets: [{
+          data: [],
+          pointBackgroundColor: "",
+          backgroundColor: "",
+          borderColor: "",
+          borderWidth: 2
+        }]
+      },
+      options: riskChartOptions
+    });
+  }
+
+  const riskConfigParam = getUrlParameter('riskConfig');
+  if (riskConfigParam) {
+    loadRiskConfigFromUrl(riskConfigParam);
+    calculate();
+  } else {
+    calculate();
+  }
+
+  const configSelect = document.getElementById('configurationSelect');
+  if (configSelect) {
+    configSelect.addEventListener('change', () => {
+      calculate();
+    });
+  }
+
+  // Load vectors from URL if present
+  const vectorParam = getUrlParameter('vector');
+  if (vectorParam) {
+    loadVectors(vectorParam);
+  }
+
+  // Add event listeners to input fields
+  partials.forEach(function (factor) {
+    const element = document.getElementById(factor);
+    if (element) {
+      element.addEventListener('change', calculate);
+    }
+  });
+});
+
+// ----------------------------------------------------
+// End of File
+// ----------------------------------------------------
