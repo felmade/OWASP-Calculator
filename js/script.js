@@ -144,7 +144,7 @@ window.updateRiskLevelMapping = updateRiskLevelMapping;
  * Loads vectors from a URL parameter and updates input fields accordingly.
  * @param {string} vector - The vector string from the URL parameter.
  */
-function loadVectors(vector) {
+export function loadVectors(vector) {
   vector = vector.replace('(', '').replace(')', '');
   var values = vector.split('/');
 
@@ -164,7 +164,7 @@ function loadVectors(vector) {
 /**
  * Calculates the risk scores and updates the display and chart accordingly.
  */
-function calculate() {
+export function calculate() {
   const configSelect = document.getElementById('configurationSelect');
   const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
   const dataset = [];
@@ -463,7 +463,7 @@ export function updateRiskLevelMapping(testMode = false, L_score = null, I_score
  * Loads the risk configuration from the URL parameter and adds it as "URL Configuration".
  * @param {string} riskConfigStr - The risk configuration string from the URL parameter.
  */
-function loadRiskConfigFromUrl(riskConfigStr) {
+export function loadRiskConfigFromUrl(riskConfigStr) {
   // Parse the risk configuration string, e.g., "LOW:0-3;MEDIUM:3-6;HIGH:6-9"
   const configEntries = riskConfigStr.split(';');
   const customConfig = {};
@@ -506,3 +506,5 @@ function loadRiskConfigFromUrl(riskConfigStr) {
     }
   }
 }
+
+//?riskConfig=LOW:0-4;MEDIUM:4-7;HIGH:7-9
