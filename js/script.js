@@ -102,8 +102,8 @@ function parseClassesFromUrl() {
       { name: 'NOTE', min: -Infinity, max: thresholds.LOW[0] },
       { name: 'LOW', min: thresholds.LOW[0], max: thresholds.LOW[1] },
       { name: 'MEDIUM', min: thresholds.MEDIUM[0], max: thresholds.MEDIUM[1] },
-      { name: 'HIGH', min: thresholds.HIGH[0], max: thresholds.HIGH[1] },
-      { name: 'NOTE', min: thresholds.HIGH[1], max: Infinity }
+      { name: 'HIGH', min: thresholds.HIGH[0], max: thresholds.HIGH[1] + 1},
+      { name: 'NOTE', min: thresholds.HIGH[1] + 1, max: Infinity }
     ];
   }
 
@@ -127,8 +127,8 @@ function parseClassesFromUrl() {
       { name: 'NOTE', min: -Infinity, max: thresholds.LOW[0] },
       { name: 'LOW', min: thresholds.LOW[0], max: thresholds.LOW[1] },
       { name: 'MEDIUM', min: thresholds.MEDIUM[0], max: thresholds.MEDIUM[1] },
-      { name: 'HIGH', min: thresholds.HIGH[0], max: thresholds.HIGH[1] },
-      { name: 'NOTE', min: thresholds.HIGH[1], max: Infinity }
+      { name: 'HIGH', min: thresholds.HIGH[0], max: thresholds.HIGH[1] + 1 },
+      { name: 'NOTE', min: thresholds.HIGH[1] + 1, max: Infinity }
     ];
   }
 
@@ -197,6 +197,9 @@ function parseCombinationsFromUrl() {
 function getClassForValue(value, classesConfig) {
   for (let cls of classesConfig) {
     if (value >= cls.min && value < cls.max) {
+      return cls.name;
+    }
+    if (value === 9 && value >= cls.min && value < cls.max) {
       return cls.name;
     }
   }
@@ -348,14 +351,6 @@ function updateRiskChart(dataset, RS) {
   riskChart.data.datasets[0].backgroundColor = backgrounds[c];
   riskChart.data.datasets[0].borderColor = colors[c];
   riskChart.update();
-}
-
-/**
- * Retrieves the risk thresholds for the selected configuration.
- * (Only used if we still rely on old configs. This can remain for backward compatibility.)
- */
-function getRiskThresholds(selectedConfigName) {
-  return riskConfigurations[selectedConfigName] || riskConfigurations['Default Configuration'];
 }
 
 // ----------------------------------------------------
