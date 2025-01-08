@@ -3,6 +3,7 @@
  */
 
 import { riskConfigurations, updateRiskLevelMapping, loadVectors, loadRiskConfigFromUrl, calculate } from '../js/script.js';
+import { shouldUseNewLogic } from '../js/url_logic.js';
 
 describe('updateRiskLevelMapping() with testMode enabled', () => {
     let originalLog;
@@ -679,4 +680,64 @@ describe('Integration Tests: URL Configuration and Vector Passing', () => {
         expect(scoreLink.textContent).toBe('SL:1/M:1/O:1/S:1/ED:1/EE:1/A:1/ID:1/LC:4/LI:4/LAV:4/LAC:4/FD:1/RD:1/NC:1/PV:1');
         expect(scoreLink.href).toBe(`https://felmade.github.io/OWASP-Calculator/?vector=SL:1/M:1/O:1/S:1/ED:1/EE:1/A:1/ID:1/LC:4/LI:4/LAV:4/LAC:4/FD:1/RD:1/NC:1/PV:1`);
     });
+    describe('Step 1: shouldUseNewLogic()', () => {
+        let originalSwal;
+
+        beforeAll(() => {
+            // Mock swal to avoid real pop-ups
+            originalSwal = global.swal;
+            global.swal = jest.fn();
+        });
+
+        afterAll(() => {
+            // Restore
+            global.swal = originalSwal;
+        });
+
+        test('No parameters => returns false, no swal called', () => {
+            delete window.location;
+            window.location = { search: '' };
+
+            const result = shouldUseNewLogic();
+            expect(result).toBe(false);
+            expect(global.swal).not.toHaveBeenCalled();
+        });
+
+        test('Only mapping => returns false, swal error called', () => {
+            delete window.location;
+            window.location = { search: '?mapping=foo123' };
+
+            const result = shouldUseNewLogic();
+            expect(result).toBe(false);
+            expect(global.swal).toHaveBeenCalledWith(
+                "Error",
+                "You need both 'mapping' and 'configuration' parameters. Falling back to default.",
+                "error"
+            );
+        });
+
+        test('Only configuration => returns false, swal error called', () => {
+            delete window.location;
+            window.location = { search: '?configuration=someconfig' };
+
+            const result = shouldUseNewLogic();
+            expect(result).toBe(false);
+            expect(global.swal).toHaveBeenCalledWith(
+                "Error",
+                "You need both 'mapping' and 'configuration' parameters. Falling back to default.",
+                "error"
+            );
+        });
+
+        test('mapping & configuration => returns true, no swal', () => {
+            delete window.location;
+            window.location = { search: '?mapping=foo&configuration=bar' };
+
+            const result = shouldUseNewLogic();
+            expect(result).toBe(true);
+            // check that swal was NOT triggered
+            expect(global.swal).not.toHaveBeenCalled();
+        });
+    });
+
 });

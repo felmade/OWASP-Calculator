@@ -1,4 +1,5 @@
 "use strict";
+import { shouldUseNewLogic } from './url_logic.js';
 
 // Global variables and configurations for the risk chart and calculations.
 
@@ -165,6 +166,14 @@ export function loadVectors(vector) {
  * Calculates the risk scores and updates the display and chart accordingly.
  */
 export function calculate() {
+  if (shouldUseNewLogic()) {
+    // Hier würden wir bald unsere neue Logik aufrufen (in Schritt 2),
+    // aber jetzt tun wir einfach nur:
+    console.log("[INFO] Both mapping & configuration are present. Placeholder for new logic.");
+
+    // Wir beenden, damit die alte Logik NICHT läuft.
+    return;
+  }
   const configSelect = document.getElementById('configurationSelect');
   const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
   const dataset = [];
