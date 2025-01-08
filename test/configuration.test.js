@@ -3,7 +3,12 @@
  */
 
 import { riskConfigurations, updateRiskLevelMapping, loadVectors, loadRiskConfigFromUrl, calculate } from '../js/script.js';
-import { shouldUseNewLogic } from '../js/url_logic.js';
+import {
+    shouldUseNewLogic,
+    parseUrlParameters,
+    getStoredVector
+} from '../js/url_logic.js';
+
 
 describe('updateRiskLevelMapping() with testMode enabled', () => {
     let originalLog;
@@ -739,5 +744,68 @@ describe('Integration Tests: URL Configuration and Vector Passing', () => {
             expect(global.swal).not.toHaveBeenCalled();
         });
     });
+    describe('Step 2 extended: vector parameter parsing', () => {
+        let originalSwal;
 
+        beforeAll(() => {
+            // Mock swal
+            originalSwal = global.swal;
+            global.swal = jest.fn();
+        });
+
+        afterAll(() => {
+            global.swal = originalSwal;
+        });
+
+        test('No vector param => getStoredVector() remains null', () => {
+            // We do have mapping & config, so new logic is triggered
+            delete window.location;
+            window.location = {
+                search: '?mapping=FOO=BAR;ABC=DEF&configuration=LOW:0-1'
+            };
+
+            expect(shouldUseNewLogic()).toBe(true);
+            const success = parseUrlParameters();
+            expect(success).toBe(true);
+            expect(getStoredVector()).toBeNull();
+            expect(global.swal).not.toHaveBeenCalled();
+        });
+
+        test('Valid vector => successfully parsed into an object', () => {
+            delete window.location;
+            window.location = {
+                search: '?mapping=LOW-LOW=NOTE;HIGH-HIGH=CRITICAL'
+                    + '&configuration=LOW:0-5;HIGH:5-10'
+                    + '&vector=(sl:1/m:2/o:3)'
+            };
+
+            expect(shouldUseNewLogic()).toBe(true);
+            const success = parseUrlParameters();
+            expect(success).toBe(true);
+            expect(global.swal).not.toHaveBeenCalled();
+
+            const vec = getStoredVector();
+            expect(vec).toEqual({ sl: 1, m: 2, o: 3 });
+        });
+
+        test('Invalid vector format => parse fails => swal => fallback', () => {
+            delete window.location;
+            window.location = {
+                search: '?mapping=LOW-LOW=NOTE;HIGH-HIGH=CRITICAL'
+                    + '&configuration=LOW:0-5;HIGH:5-10'
+                    + '&vector=invalid_format'
+            };
+
+            expect(shouldUseNewLogic()).toBe(true);
+            const success = parseUrlParameters();
+            expect(success).toBe(false);
+
+            expect(global.swal).toHaveBeenCalledWith(
+                "Error",
+                "Parsing of configuration/mapping/vector failed. Falling back to default.",
+                "error"
+            );
+            // storedVector should remain null in that case
+        });
+    });
 });

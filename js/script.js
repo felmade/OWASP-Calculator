@@ -1,5 +1,11 @@
 "use strict";
-import { shouldUseNewLogic } from './url_logic.js';
+import {
+  shouldUseNewLogic,
+  parseUrlParameters,
+  getStoredConfiguration,
+  getStoredMapping,
+  getStoredVector
+} from './url_logic.js';
 
 // Global variables and configurations for the risk chart and calculations.
 
@@ -167,12 +173,19 @@ export function loadVectors(vector) {
  */
 export function calculate() {
   if (shouldUseNewLogic()) {
-    // Hier würden wir bald unsere neue Logik aufrufen (in Schritt 2),
-    // aber jetzt tun wir einfach nur:
-    console.log("[INFO] Both mapping & configuration are present. Placeholder for new logic.");
-
-    // Wir beenden, damit die alte Logik NICHT läuft.
-    return;
+    // Neuer Schritt 2: Wir versuchen zu parsen (config, mapping, optional vector)
+    const parseSuccess = parseUrlParameters();
+    if (!parseSuccess) {
+      // => alte Logik
+    } else {
+      console.log("[INFO] Parsing success. Found config, mapping, vector (if any).");
+      // Optional: just log them for now
+      console.log("Parsed config:", getStoredConfiguration());
+      console.log("Parsed mapping:", getStoredMapping());
+      console.log("Parsed vector:", getStoredVector());
+      // Step 3/4: Hier kommt später die "Advanced Berechnung"
+      return;
+    }
   }
   const configSelect = document.getElementById('configurationSelect');
   const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
