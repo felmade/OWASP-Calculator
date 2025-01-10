@@ -10,12 +10,12 @@
  * - mappingObj: { "LOW-LOW": "MEDIUM", "LOW-HIGH":"CRITICAL", ... }
  * - storedVector: { sl: number, m: number, ...} (optional)
  */
-let likelihoodConfigObj = {};
-let impactConfigObj = {};
-let likelihoodLevels = [];
-let impactLevels = [];
-let mappingObj = {};
-let storedVector = null;
+export let likelihoodConfigObj = {};
+export let impactConfigObj = {};
+export let likelihoodLevels = [];
+export let impactLevels = [];
+export let mappingObj = {};
+export let storedVector = {};
 
 /**
  * 16 Felder, die im Vector vorkommen dürfen.
@@ -67,7 +67,7 @@ export function parseUrlParameters() {
         if (vectorParam) {
             storedVector = parseVector(vectorParam);
         } else {
-            storedVector = null;
+            storedVector = {};
         }
 
         console.log("[URL_LOGIC] parseUrlParameters() OK", {
@@ -268,20 +268,31 @@ function parseVector(str) {
  * Ermittelt, welchem Level (z. B. "LOW") der Wert entspricht,
  * indem wir in configObj[level] = [min,max] nachschauen.
  */
-function getRangeClass(value, configObj) {
+export function getRangeClass(value, configObj) {
     for (const level in configObj) {
         const [minVal, maxVal] = configObj[level];
-        if (value >= minVal && value < maxVal) {
+
+        // Normalfall: [minVal, maxVal)  => >= minVal && < maxVal
+        // HACK: Wenn wir GENAU 9 sind und maxVal == 9, dann
+        //       wollen wir es diesem Level zuordnen.
+        if (
+            (value >= minVal && value < maxVal) ||
+            (value === 9 && maxVal === 9)
+        ) {
             return level;
         }
     }
-    return "ERROR"; // fallback
+    return "ERROR";
 }
+
 
 /**
  * mappingObj[L_class-I_class]
  */
-function getMappedRisk(L_class, I_class) {
+export function getMappedRisk(L_class, I_class) {
+    if (L_class === "ERROR" || I_class === "ERROR") {
+        return "ERROR";
+    }
     const key = `${L_class}-${I_class}`.toUpperCase();
     return mappingObj[key] || "ERROR";
 }
@@ -324,7 +335,7 @@ function checkRequiredParameters() {
 /**
  * Average über gegebene Keys
  */
-function averageVector(vec, keys) {
+export function averageVector(vec, keys) {
     let sum = 0, count=0;
     keys.forEach(k => {
         if (typeof vec[k] === 'number') {
@@ -339,7 +350,7 @@ function averageVector(vec, keys) {
 /**
  * Max über gegebene Keys
  */
-function maxVector(vec, keys) {
+export function maxVector(vec, keys) {
     let maxVal = Number.NEGATIVE_INFINITY;
     keys.forEach(k => {
         const v = vec[k];
@@ -354,7 +365,7 @@ function maxVector(vec, keys) {
 /**
  * Extrahiert URL-Prameter
  */
-function getUrlParameter(name) {
+export function getUrlParameter(name) {
     name = name.replace(/[\[\]]/g, "\\$&");
     const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)", "i");
     const results = regex.exec(window.location.search);
@@ -391,9 +402,9 @@ export function getStoredMapping() {
 }
 
 /**
- * Gibt den aktuell gespeicherten Vector zurück (oder null).
+ * Gibt den aktuell gespeicherten Vector zurück
  *
- * @returns {Object|null} - z. B. { sl:1, m:2, ... } oder null
+ * @returns {Object|null} - z. B. { sl:1, m:2, ... }
  */
 export function getStoredVector() {
     return storedVector;
