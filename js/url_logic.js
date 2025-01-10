@@ -248,6 +248,12 @@ function parseVector(str) {
         if (isNaN(valNum)) {
             throw new Error("NaN in vector segment: " + seg);
         }
+
+        // Fehler werfen
+        if (valNum < 0 || valNum > 9) {
+            throw new Error(`Invalid vector range (0..9) in segment: ${seg}`);
+        }
+
         if (ALLOWED_VECTOR_KEYS.has(key)) {
             vecObj[key] = valNum;
         } else {
@@ -315,7 +321,6 @@ function checkRequiredParameters() {
     // Alle erforderlichen Parameter sind vorhanden
     return true;
 }
-
 /**
  * Average über gegebene Keys
  */
@@ -344,4 +349,52 @@ function maxVector(vec, keys) {
     });
     if (maxVal === Number.NEGATIVE_INFINITY) return 0;
     return maxVal;
+}
+
+/**
+ * Extrahiert URL-Prameter
+ */
+function getUrlParameter(name) {
+    name = name.replace(/[\[\]]/g, "\\$&");
+    const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)", "i");
+    const results = regex.exec(window.location.search);
+    if (!results) return null;
+    if (!results[2]) return null;
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+// ======================================
+// GETTER-FUNKTIONEN (Exportierte Helpers)
+// ======================================
+
+/**
+ * Gibt die aktuell gespeicherten Konfigurationen zurück.
+ * z. B. { likelihood:{LOW:[0,2],HIGH:[2,9]}, impact:{...} }
+ *
+ * @returns {Object} - { likelihood: {...}, impact: {...} }
+ */
+export function getStoredConfiguration() {
+    return {
+        likelihood: likelihoodConfigObj,
+        impact: impactConfigObj
+    };
+}
+
+/**
+ * Gibt das aktuell gespeicherte Mapping-Objekt zurück.
+ * z. B. { "LOW-LOW":"VAL1", "LOW-HIGH":"VAL2", ... }
+ *
+ * @returns {Object} - Das Mapping-Objekt
+ */
+export function getStoredMapping() {
+    return mappingObj;
+}
+
+/**
+ * Gibt den aktuell gespeicherten Vector zurück (oder null).
+ *
+ * @returns {Object|null} - z. B. { sl:1, m:2, ... } oder null
+ */
+export function getStoredVector() {
+    return storedVector;
 }
