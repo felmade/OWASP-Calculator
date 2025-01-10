@@ -1,11 +1,5 @@
 "use strict";
-import {
-  shouldUseNewLogic,
-  parseUrlParameters,
-  getStoredConfiguration,
-  getStoredMapping,
-  getStoredVector
-} from './url_logic.js';
+import { shouldUseUrlLogic } from './url_logic.js';
 
 // Global variables and configurations for the risk chart and calculations.
 
@@ -172,21 +166,15 @@ export function loadVectors(vector) {
  * Calculates the risk scores and updates the display and chart accordingly.
  */
 export function calculate() {
-  if (shouldUseNewLogic()) {
-    // Neuer Schritt 2: Wir versuchen zu parsen (config, mapping, optional vector)
-    const parseSuccess = parseUrlParameters();
-    if (!parseSuccess) {
-      // => alte Logik
-    } else {
-      console.log("[INFO] Parsing success. Found config, mapping, vector (if any).");
-      // Optional: just log them for now
-      console.log("Parsed config:", getStoredConfiguration());
-      console.log("Parsed mapping:", getStoredMapping());
-      console.log("Parsed vector:", getStoredVector());
-      // Step 3/4: Hier kommt später die "Advanced Berechnung"
-      return;
-    }
+  // 1) Check if we should use the new logic
+  if (shouldUseUrlLogic()) {
+    // Placeholder: We do NOT parse yet, just a console log or so.
+    console.log("[INFO] We have the correct parameters -> URL-Logic is being used.");
+    // Later on, we will call parseUrlParameters() or similar function
+    // to parse the configuration, mapping, optional vector, etc.
+    return;
   }
+
   const configSelect = document.getElementById('configurationSelect');
   const selectedConfig = configSelect ? configSelect.value : 'Default Configuration';
   const dataset = [];

@@ -1,205 +1,340 @@
 // File: url_logic.js
 
 /**
- * Internal storage for the parsed parameters if successful.
+ * INTERNAL STORAGE
+ * Hier legen wir die geparsten Daten ab:
+ * - likelihoodConfigObj: { LEVEL: [min,max], ...}
+ * - impactConfigObj: { LEVEL: [min,max], ...}
+ * - likelihoodLevels: [ "LOW", "MEDIUM", ...] (sortiert nach minVal)
+ * - impactLevels: [ "NOTE", "LOW", ...] (sortiert nach minVal)
+ * - mappingObj: { "LOW-LOW": "MEDIUM", "LOW-HIGH":"CRITICAL", ... }
+ * - storedVector: { sl: number, m: number, ...} (optional)
  */
-let storedConfiguration = {};
-let storedMapping = {};
+let likelihoodConfigObj = {};
+let impactConfigObj = {};
+let likelihoodLevels = [];
+let impactLevels = [];
+let mappingObj = {};
 let storedVector = null;
 
 /**
- * Step 1 (unchanged core): Checks if both 'mapping' and 'configuration' URL params exist
- * Return true => potentially new logic
- * Return false => old logic
+ * 16 Felder, die im Vector vorkommen dürfen.
+ * Alles andere ignorieren/Fehler - je nach Wunsch.
  */
-export function shouldUseNewLogic() {
-    const mappingParam = getUrlParameter('mapping');
-    const configParam = getUrlParameter('configuration');
+const ALLOWED_VECTOR_KEYS = new Set([
+    "sl", "m", "o", "s", "ed", "ee", "a", "id",
+    "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
+]);
 
-    const hasMapping = !!mappingParam;
-    const hasConfig = !!configParam;
-
-    // Case 1: neither
-    if (!hasMapping && !hasConfig) {
-        return false;
-    }
-
-    // Case 2: only one
-    if ((hasMapping && !hasConfig) || (!hasMapping && hasConfig)) {
-        if (typeof swal === 'function') {
-            swal(
-                "Error",
-                "You need both 'mapping' and 'configuration' parameters. Falling back to default.",
-                "error"
-            );
-        } else {
-            console.error("Missing either 'mapping' or 'configuration'. Falling back to default.");
-        }
-        return false;
-    }
-
-    // Case 3: both exist
-    return true;
+/**
+ * STEP 1:
+ * Wir entscheiden, ob wir die neue Logik nutzen.
+ */
+export function shouldUseUrlLogic() {
+    return checkRequiredParameters();
 }
 
 /**
- * Step 2: Parse the actual 'mapping', 'configuration' and optional 'vector' strings.
- *  - If parse fails => show swal + return false (old logic continues).
- *  - If parse succeeds => store in our local variables & return true.
+ * STEP 2:
+ * Parse URL-Parameter für:
+ * - likelihoodConfig (z. B. "LOW:0-2;MEDIUM:2-4;HIGH:4-6")
+ * - impactConfig (z. B. "NOTE:0-3;LOW:3-6;HIGH:6-9")
+ * - mapping (z. B. "Val1, Val2, ... ValN*M")
+ * - vector (optional)
+ *
+ * Falls etwas fehlschlägt => swal/error => return false
+ * Sonst => in interne Variablen ablegen => return true
  */
 export function parseUrlParameters() {
-    const mappingParam = getUrlParameter('mapping');
-    const configParam = getUrlParameter('configuration');
-    const vectorParam = getUrlParameter('vector'); // optional
-
     try {
-        // 1) Parse configuration (MANDATORY)
-        const configObj = parseConfiguration(configParam);
+        const likelihoodConfigStr = getUrlParameter('likelihoodConfig');
+        const impactConfigStr = getUrlParameter('impactConfig');
+        const mappingStr = getUrlParameter('mapping');
+        const vectorParam = getUrlParameter('vector'); // optional
 
-        // 2) Parse mapping (MANDATORY)
-        const mappingObj = parseMappingKeyValue(mappingParam);
+        // 1) parse L & I config
+        likelihoodConfigObj = parseConfiguration(likelihoodConfigStr);
+        impactConfigObj = parseConfiguration(impactConfigStr);
 
-        // 3) Parse vector (OPTIONAL)
-        let vectorObj = null;
+        // 2) Erzeuge arrays (z. B. ["LOW","MEDIUM","HIGH"], sortiert nach minVal)
+        likelihoodLevels = configObjToSortedLevels(likelihoodConfigObj);
+        impactLevels = configObjToSortedLevels(impactConfigObj);
+
+        // 3) Mapping aufbauen (NxM)
+        mappingObj = parseNxMMapping(likelihoodLevels, impactLevels, mappingStr);
+
+        // 4) Vector (optional)
         if (vectorParam) {
-            vectorObj = parseVector(vectorParam);
+            storedVector = parseVector(vectorParam);
+        } else {
+            storedVector = null;
         }
 
-        // 4) Store them
-        storedConfiguration = configObj;
-        storedMapping = mappingObj;
-        storedVector = vectorObj;
-
-        console.log("[URL_LOGIC] Parsed configuration:", configObj);
-        console.log("[URL_LOGIC] Parsed mapping:", mappingObj);
-        console.log("[URL_LOGIC] Parsed vector:", vectorObj);
+        console.log("[URL_LOGIC] parseUrlParameters() OK", {
+            likelihoodConfigObj,
+            impactConfigObj,
+            mappingObj,
+            storedVector
+        });
 
         return true;
     } catch (err) {
-        console.error("[URL_LOGIC] parseUrlParameters() failed:", err);
+        console.error("[URL_LOGIC] parseUrlParameters() error:", err);
         if (typeof swal === 'function') {
-            swal("Error", "Parsing of configuration/mapping/vector failed. Falling back to default.", "error");
+            swal("Error", "Parsing failed. Falling back to default logic.", "error");
         }
         return false;
     }
 }
 
 /**
- * Getter for the stored configuration object
+ * STEP 3:
+ * Unsere eigentliche Berechnungsfunktion,
+ * die L & I basierend auf storedVector berechnet und
+ * das finale Risiko via mappingObj bestimmt.
  */
-export function getStoredConfiguration() {
-    return storedConfiguration;
-}
-
-/**
- * Getter for the stored mapping object
- */
-export function getStoredMapping() {
-    return storedMapping;
-}
-
-/**
- * Getter for the stored vector object (if any)
- */
-export function getStoredVector() {
-    return storedVector;
-}
-
-/**
- * Example: "LOW:0-4;MEDIUM:4-7;HIGH:7-10"
- * => { LOW: [0,4], MEDIUM: [4,7], HIGH: [7,10] }
- */
-function parseConfiguration(str) {
-    if (!str) throw new Error("No configuration string found.");
-
-    const parts = str.split(';');
-    const result = {};
-
-    parts.forEach(part => {
-        const trimmed = part.trim();
-        if (!trimmed) return;
-        const [level, range] = trimmed.split(':');
-        if (!level || !range) {
-            throw new Error(`Invalid config entry: ${part}`);
-        }
-        const [minStr, maxStr] = range.split('-');
-        const minVal = parseFloat(minStr);
-        const maxVal = parseFloat(maxStr);
-        if (isNaN(minVal) || isNaN(maxVal)) {
-            throw new Error(`Invalid numeric range in config: ${range}`);
-        }
-        result[level.trim().toUpperCase()] = [minVal, maxVal];
-    });
-
-    if (Object.keys(result).length === 0) {
-        throw new Error("No valid config entries parsed.");
+export function performAdvancedCalculation() {
+    if (!Object.keys(likelihoodConfigObj).length || !Object.keys(impactConfigObj).length) {
+        console.error("No config objects found - can't proceed.");
+        return null;
+    }
+    if (!Object.keys(mappingObj).length) {
+        console.error("No mapping found - can't proceed.");
+        return null;
     }
 
+    // 1) L_score, I_score
+    let L_score = 0;
+    let I_score = 0;
+
+    if (storedVector) {
+        // Threat-Felder => average
+        const threatKeys = ["sl","m","o","s","ed","ee","a","id"];
+        L_score = averageVector(storedVector, threatKeys);
+
+        // Impact-Felder => max
+        const impactKeys = ["lc","li","lav","lac","fd","rd","nc","pv"];
+        I_score = maxVector(storedVector, impactKeys);
+    } else {
+        console.warn("[performAdvancedCalculation] No vector => using 0 for L&I");
+    }
+
+    // 2) get L_class / I_class
+    const L_class = getRangeClass(L_score, likelihoodConfigObj);
+    const I_class = getRangeClass(I_score, impactConfigObj);
+
+    // 3) mapping => finalRisk
+    const finalRisk = getMappedRisk(L_class, I_class);
+
+    // 4) UI-Update
+    const LSElem = document.querySelector('.LS');
+    if (LSElem) {
+        LSElem.textContent = `${L_score.toFixed(3)} ${L_class}`;
+    }
+    const ISElem = document.querySelector('.IS');
+    if (ISElem) {
+        ISElem.textContent = `${I_score.toFixed(3)} ${I_class}`;
+    }
+    const RSElem = document.querySelector('.RS');
+    if (RSElem) {
+        RSElem.textContent = finalRisk;
+    }
+
+    const result = {L_score, I_score, L_class, I_class, finalRisk};
+    console.log("[performAdvancedCalculation] done:", result);
     return result;
 }
 
+// ============ HELPER FUNKTIONEN ============ //
+
 /**
- * Example: "LOW-LOW=NOTE;LOW-MEDIUM=LOW;MEDIUM-HIGH=HIGH;HIGH-HIGH=CRITICAL"
- * => { "LOW-LOW":"NOTE", "LOW-MEDIUM":"LOW", "MEDIUM-HIGH":"HIGH", "HIGH-HIGH":"CRITICAL" }
+ * parseConfiguration("LOW:0-2;MEDIUM:2-4;HIGH:4-6")
+ * => { LOW:[0,2], MEDIUM:[2,4], HIGH:[4,6] }
  */
-function parseMappingKeyValue(str) {
-    if (!str) throw new Error("No mapping string found.");
-
-    const pairs = str.split(';');
-    const mapObj = {};
-
-    pairs.forEach(pair => {
-        const trimmed = pair.trim();
+function parseConfiguration(str) {
+    if (!str) throw new Error("No config string provided.");
+    const parts = str.split(';');
+    const obj = {};
+    parts.forEach(part => {
+        const trimmed = part.trim();
         if (!trimmed) return;
-        const [key, val] = trimmed.split('=');
-        if (!key || !val) {
-            throw new Error(`Invalid mapping pair: ${pair}`);
+        const [levelRaw, rangeRaw] = trimmed.split(':');
+        if (!levelRaw || !rangeRaw) {
+            throw new Error("Invalid config part: " + part);
         }
-        mapObj[key.trim().toUpperCase()] = val.trim().toUpperCase();
+        const [minStr, maxStr] = rangeRaw.split('-');
+        const minVal = parseFloat(minStr);
+        const maxVal = parseFloat(maxStr);
+        if (isNaN(minVal) || isNaN(maxVal)) {
+            throw new Error("Invalid numeric range in " + part);
+        }
+        obj[levelRaw.trim().toUpperCase()] = [minVal, maxVal];
     });
+    if (!Object.keys(obj).length) {
+        throw new Error("Empty config object from: " + str);
+    }
+    return obj;
+}
 
-    if (Object.keys(mapObj).length === 0) {
-        throw new Error("No valid mapping entries parsed.");
+/**
+ * Konvertiert z. B. { LOW:[0,2], MEDIUM:[2,4], HIGH:[4,6] }
+ * in ein Array, sortiert nach minVal => ["LOW","MEDIUM","HIGH"].
+ */
+function configObjToSortedLevels(configObj) {
+    const tempArr = [];
+    for (const level in configObj) {
+        const [minVal, maxVal] = configObj[level];
+        tempArr.push({ level, minVal, maxVal });
+    }
+    // sort by minVal
+    tempArr.sort((a,b) => a.minVal - b.minVal);
+    // return array of level names in ascending order
+    return tempArr.map(item => item.level);
+}
+
+/**
+ * parseNxMMapping(likelihoodLevels, impactLevels, mappingStr)
+ * z. B. L=5, I=3 => wir brauchen 15 Einträge in mappingStr
+ * Key: "LIKELIHOOD-IMPACT"
+ */
+function parseNxMMapping(lLevels, iLevels, shortStr) {
+    if (!shortStr) throw new Error("No mapping string provided.");
+
+    const N = lLevels.length;
+    const M = iLevels.length;
+
+    const arr = shortStr.split(',').map(s => s.trim());
+    if (arr.length !== N*M) {
+        throw new Error(`Need exactly ${N*M} mapping entries, but got ${arr.length}`);
     }
 
+    let index = 0;
+    const mapObj = {};
+    for (let l = 0; l < N; l++) {
+        for (let i = 0; i < M; i++) {
+            const key = `${lLevels[l]}-${iLevels[i]}`.toUpperCase();
+            mapObj[key] = arr[index].toUpperCase();
+            index++;
+        }
+    }
     return mapObj;
 }
 
 /**
- * Parse the vector string if present.
- * You have your own "vector" format in your original code, e.g.:
- * "(sl:1/m:2/o:3/.../pv:16)"
- * We'll do a minimal version: remove parentheses, split by '/', then split by ':'
+ * parseVector("(sl:1/m:2/o:3/...)")
+ *  => { sl:1, m:2, o:3, ... }
+ *  Nur unsere 16 allowed keys
  */
 function parseVector(str) {
-    // Remove leading/trailing parentheses if they exist
-    const cleaned = str.replace(/^\(/, '').replace(/\)$/, '');
-    const segments = cleaned.split('/');
-    if (segments.length === 0) {
+    // remove parentheses
+    const clean = str.replace(/^\(/,'').replace(/\)$/,'');
+    const segments = clean.split('/');
+    if (!segments.length) {
         throw new Error("Empty vector string");
     }
-
-    const vectorObj = {};
-    segments.forEach(seg => {
-        const [key, val] = seg.split(':');
-        if (!key || val === undefined) {
-            throw new Error(`Invalid vector segment: ${seg}`);
-        }
-        vectorObj[key.trim().toLowerCase()] = parseFloat(val);
+    // init result with 0 for all allowed keys
+    const vecObj = {};
+    ALLOWED_VECTOR_KEYS.forEach(k => {
+        vecObj[k] = 0;
     });
 
-    if (Object.keys(vectorObj).length === 0) {
-        throw new Error("No valid vector entries parsed.");
-    }
-    return vectorObj;
+    segments.forEach(seg => {
+        const [keyRaw, valRaw] = seg.split(':');
+        if (!keyRaw || valRaw === undefined) {
+            throw new Error("Invalid vector segment: " + seg);
+        }
+        const key = keyRaw.trim().toLowerCase();
+        const valNum = parseFloat(valRaw.trim());
+        if (isNaN(valNum)) {
+            throw new Error("NaN in vector segment: " + seg);
+        }
+        if (ALLOWED_VECTOR_KEYS.has(key)) {
+            vecObj[key] = valNum;
+        } else {
+            console.warn(`[parseVector] ignoring unknown key "${key}"`);
+        }
+    });
+
+    return vecObj;
 }
 
 /**
- * Helper to read URL params
+ * Ermittelt, welchem Level (z. B. "LOW") der Wert entspricht,
+ * indem wir in configObj[level] = [min,max] nachschauen.
  */
-function getUrlParameter(name) {
-    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-    const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-    const results = regex.exec(window.location.search);
-    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+function getRangeClass(value, configObj) {
+    for (const level in configObj) {
+        const [minVal, maxVal] = configObj[level];
+        if (value >= minVal && value < maxVal) {
+            return level;
+        }
+    }
+    return "ERROR"; // fallback
+}
+
+/**
+ * mappingObj[L_class-I_class]
+ */
+function getMappedRisk(L_class, I_class) {
+    const key = `${L_class}-${I_class}`.toUpperCase();
+    return mappingObj[key] || "ERROR";
+}
+
+// =========== Hilfsfunktion: URL-Parameter lesen ===========
+function checkRequiredParameters() {
+    const requiredParams = ['likelihoodConfig', 'impactConfig', 'mapping'];
+    const missingParams = [];
+
+    // Überprüfen, ob die benötigten Parameter in der URL vorhanden sind
+    requiredParams.forEach(param => {
+        const regex = new RegExp('[\\?&]' + param + '=([^&#]*)');
+        const results = regex.exec(window.location.search);
+        if (!results) {
+            missingParams.push(param);
+        }
+    });
+
+    // Wenn Parameter fehlen, Rückgabe false
+    if (missingParams.length > 0) {
+        swal({
+            title: "Missing Parameters",
+            text: `The following parameters are missing: ${missingParams.join(', ')}. Default configuration will be used.`,
+            icon: "warning",
+            button: "OK"
+        });
+        return false;
+    }
+
+    // Alle Parameter sind vorhanden
+    return true;
+}
+
+/**
+ * Average über gegebene Keys
+ */
+function averageVector(vec, keys) {
+    let sum = 0, count=0;
+    keys.forEach(k => {
+        if (typeof vec[k] === 'number') {
+            sum += vec[k];
+            count++;
+        }
+    });
+    if (!count) return 0;
+    return sum/count;
+}
+
+/**
+ * Max über gegebene Keys
+ */
+function maxVector(vec, keys) {
+    let maxVal = Number.NEGATIVE_INFINITY;
+    keys.forEach(k => {
+        const v = vec[k];
+        if (typeof v === 'number' && v > maxVal) {
+            maxVal = v;
+        }
+    });
+    if (maxVal === Number.NEGATIVE_INFINITY) return 0;
+    return maxVal;
 }

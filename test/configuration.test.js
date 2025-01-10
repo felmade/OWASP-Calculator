@@ -4,11 +4,13 @@
 
 import { riskConfigurations, updateRiskLevelMapping, loadVectors, loadRiskConfigFromUrl, calculate } from '../js/script.js';
 import {
-    shouldUseNewLogic,
+    shouldUseUrlLogic,
     parseUrlParameters,
-    getStoredVector
+    performAdvancedCalculation,
+    getStoredVector,
+    getStoredConfiguration,
+    getStoredMapping
 } from '../js/url_logic.js';
-
 
 describe('updateRiskLevelMapping() with testMode enabled', () => {
     let originalLog;
@@ -685,127 +687,89 @@ describe('Integration Tests: URL Configuration and Vector Passing', () => {
         expect(scoreLink.textContent).toBe('SL:1/M:1/O:1/S:1/ED:1/EE:1/A:1/ID:1/LC:4/LI:4/LAV:4/LAC:4/FD:1/RD:1/NC:1/PV:1');
         expect(scoreLink.href).toBe(`https://felmade.github.io/OWASP-Calculator/?vector=SL:1/M:1/O:1/S:1/ED:1/EE:1/A:1/ID:1/LC:4/LI:4/LAV:4/LAC:4/FD:1/RD:1/NC:1/PV:1`);
     });
-    describe('Step 1: shouldUseNewLogic()', () => {
-        let originalSwal;
-
-        beforeAll(() => {
-            // Mock swal to avoid real pop-ups
-            originalSwal = global.swal;
+    describe('shouldUseUrlLogic()', () => {
+        beforeEach(() => {
+            // Mock swal to prevent actual alert pop-ups
             global.swal = jest.fn();
         });
 
-        afterAll(() => {
-            // Restore
-            global.swal = originalSwal;
+        afterEach(() => {
+            jest.clearAllMocks();
         });
 
-        test('No parameters => returns false, no swal called', () => {
+        test('All required parameters are present, should return true', () => {
+            // Simulate URL
+            delete window.location;
+            window.location = { search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple' };
+
+            const result = shouldUseUrlLogic();
+            expect(result).toBe(true);
+            expect(global.swal).not.toHaveBeenCalled();
+        });
+
+        test('All required parameters and optional parameter vector are present, should return true', () => {
+            // Simulate URL
+            delete window.location;
+            window.location = { search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple&vector=testVector' };
+
+            const result = shouldUseUrlLogic();
+            expect(result).toBe(true);
+            expect(global.swal).not.toHaveBeenCalled();
+        });
+
+        test('One required parameter missing, should return false and show alert', () => {
+            // Simulate URL
+            delete window.location;
+            window.location = { search: '?likelihoodConfig=high&impactConfig=medium&vector=testVector' };
+
+            const result = shouldUseUrlLogic();
+            expect(result).toBe(false);
+            expect(global.swal).toHaveBeenCalledWith({
+                title: 'Missing Parameters',
+                text: 'The following parameters are missing: mapping. Default configuration will be used.',
+                icon: 'warning',
+                button: 'OK'
+            });
+        });
+
+        test('All required parameters missing, optional parameter vector present, should return false and show alert', () => {
+            // Simulate URL
+            delete window.location;
+            window.location = { search: '?vector=testVector' };
+
+            const result = shouldUseUrlLogic();
+            expect(result).toBe(false);
+            expect(global.swal).toHaveBeenCalledWith({
+                title: 'Missing Parameters',
+                text: 'The following parameters are missing: likelihoodConfig, impactConfig, mapping. Default configuration will be used.',
+                icon: 'warning',
+                button: 'OK'
+            });
+        });
+
+        test('All required and optional parameters missing, should return false and show alert', () => {
+            // Simulate URL
             delete window.location;
             window.location = { search: '' };
 
-            const result = shouldUseNewLogic();
+            const result = shouldUseUrlLogic();
             expect(result).toBe(false);
-            expect(global.swal).not.toHaveBeenCalled();
+            expect(global.swal).toHaveBeenCalledWith({
+                title: 'Missing Parameters',
+                text: 'The following parameters are missing: likelihoodConfig, impactConfig, mapping. Default configuration will be used.',
+                icon: 'warning',
+                button: 'OK'
+            });
         });
 
-        test('Only mapping => returns false, swal error called', () => {
+        test('Extra irrelevant parameters and optional vector, should return true if required parameters are present', () => {
+            // Simulate URL
             delete window.location;
-            window.location = { search: '?mapping=foo123' };
+            window.location = { search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple&vector=testVector&extraParam=123' };
 
-            const result = shouldUseNewLogic();
-            expect(result).toBe(false);
-            expect(global.swal).toHaveBeenCalledWith(
-                "Error",
-                "You need both 'mapping' and 'configuration' parameters. Falling back to default.",
-                "error"
-            );
-        });
-
-        test('Only configuration => returns false, swal error called', () => {
-            delete window.location;
-            window.location = { search: '?configuration=someconfig' };
-
-            const result = shouldUseNewLogic();
-            expect(result).toBe(false);
-            expect(global.swal).toHaveBeenCalledWith(
-                "Error",
-                "You need both 'mapping' and 'configuration' parameters. Falling back to default.",
-                "error"
-            );
-        });
-
-        test('mapping & configuration => returns true, no swal', () => {
-            delete window.location;
-            window.location = { search: '?mapping=foo&configuration=bar' };
-
-            const result = shouldUseNewLogic();
+            const result = shouldUseUrlLogic();
             expect(result).toBe(true);
-            // check that swal was NOT triggered
             expect(global.swal).not.toHaveBeenCalled();
-        });
-    });
-    describe('Step 2 extended: vector parameter parsing', () => {
-        let originalSwal;
-
-        beforeAll(() => {
-            // Mock swal
-            originalSwal = global.swal;
-            global.swal = jest.fn();
-        });
-
-        afterAll(() => {
-            global.swal = originalSwal;
-        });
-
-        test('No vector param => getStoredVector() remains null', () => {
-            // We do have mapping & config, so new logic is triggered
-            delete window.location;
-            window.location = {
-                search: '?mapping=FOO=BAR;ABC=DEF&configuration=LOW:0-1'
-            };
-
-            expect(shouldUseNewLogic()).toBe(true);
-            const success = parseUrlParameters();
-            expect(success).toBe(true);
-            expect(getStoredVector()).toBeNull();
-            expect(global.swal).not.toHaveBeenCalled();
-        });
-
-        test('Valid vector => successfully parsed into an object', () => {
-            delete window.location;
-            window.location = {
-                search: '?mapping=LOW-LOW=NOTE;HIGH-HIGH=CRITICAL'
-                    + '&configuration=LOW:0-5;HIGH:5-10'
-                    + '&vector=(sl:1/m:2/o:3)'
-            };
-
-            expect(shouldUseNewLogic()).toBe(true);
-            const success = parseUrlParameters();
-            expect(success).toBe(true);
-            expect(global.swal).not.toHaveBeenCalled();
-
-            const vec = getStoredVector();
-            expect(vec).toEqual({ sl: 1, m: 2, o: 3 });
-        });
-
-        test('Invalid vector format => parse fails => swal => fallback', () => {
-            delete window.location;
-            window.location = {
-                search: '?mapping=LOW-LOW=NOTE;HIGH-HIGH=CRITICAL'
-                    + '&configuration=LOW:0-5;HIGH:5-10'
-                    + '&vector=invalid_format'
-            };
-
-            expect(shouldUseNewLogic()).toBe(true);
-            const success = parseUrlParameters();
-            expect(success).toBe(false);
-
-            expect(global.swal).toHaveBeenCalledWith(
-                "Error",
-                "Parsing of configuration/mapping/vector failed. Falling back to default.",
-                "error"
-            );
-            // storedVector should remain null in that case
         });
     });
 });
