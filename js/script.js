@@ -106,15 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Load the risk configuration from the URL if present
-  const riskConfigParam = getUrlParameter('riskConfig');
-  if (riskConfigParam) {
-    loadRiskConfigFromUrl(riskConfigParam);
-    calculate(); // Recalculate with the new configuration
-  } else {
-    calculate(); // Initial calculation without URL configuration
-  }
-
   // Add event listener for the dropdown menu
   const configSelect = document.getElementById('configurationSelect');
   if (configSelect) {
@@ -339,19 +330,19 @@ function getRisk(score, selectedConfig = 'Default Configuration') {
  */
 function getCriticality(L, I) {
   // NOTE
-  if (L == "LOW" && I == "LOW") return 'NOTE';
+  if (L === "LOW" && I === "LOW") return 'NOTE';
 
   // LOW
-  if ((L == "LOW" && I == "MEDIUM") || (L == "MEDIUM" && I == "LOW")) return 'LOW';
+  if ((L === "LOW" && I === "MEDIUM") || (L === "MEDIUM" && I === "LOW")) return 'LOW';
 
   // MEDIUM
-  if ((L == "LOW" && I == "HIGH") || (L == "MEDIUM" && I == "MEDIUM") || (L == "HIGH" && I == "LOW")) return 'MEDIUM';
+  if ((L === "LOW" && I === "HIGH") || (L === "MEDIUM" && I === "MEDIUM") || (L === "HIGH" && I === "LOW")) return 'MEDIUM';
 
   // HIGH
-  if ((L == "HIGH" && I == "MEDIUM") || (L == "MEDIUM" && I == "HIGH")) return 'HIGH';
+  if ((L === "HIGH" && I === "MEDIUM") || (L === "MEDIUM" && I === "HIGH")) return 'HIGH';
 
   // CRITICAL
-  if (L == "HIGH" && I == "HIGH") return 'CRITICAL';
+  if (L === "HIGH" && I === "HIGH") return 'CRITICAL';
 
   return 'NOTE'; // Default case
 }
@@ -392,7 +383,7 @@ function updateRiskChart(dataset, RS) {
     return;
   }
 
-  var c = 0;
+  let c = 0;
 
   switch (RS) {
     case "LOW":
@@ -468,53 +459,3 @@ export function updateRiskLevelMapping(testMode = false, L_score = null, I_score
   $(".RS").text(RS);
   $(".RS").attr("class", `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`);
 }
-
-/**
- * Loads the risk configuration from the URL parameter and adds it as "URL Configuration".
- * @param {string} riskConfigStr - The risk configuration string from the URL parameter.
- */
-export function loadRiskConfigFromUrl(riskConfigStr) {
-  // Parse the risk configuration string, e.g., "LOW:0-3;MEDIUM:3-6;HIGH:6-9"
-  const configEntries = riskConfigStr.split(';');
-  const customConfig = {};
-
-  configEntries.forEach(function(entry) {
-    const [level, range] = entry.split(':');
-    if (level && range) {
-      const [minStr, maxStr] = range.split('-');
-      const min = parseFloat(minStr);
-      const max = parseFloat(maxStr);
-      if (!isNaN(min) && !isNaN(max)) {
-        customConfig[level.trim().toUpperCase()] = [min, max];
-      }
-    }
-  });
-
-  // If the custom configuration is valid, add it
-  if (Object.keys(customConfig).length > 0) {
-    riskConfigurations['URL Configuration'] = customConfig;
-
-    // Add the new option to the dropdown menu
-    const configSelect = document.getElementById('configurationSelect');
-    if (configSelect) {
-      // Check if "URL Configuration" already exists
-      let exists = false;
-      for (let i = 0; i < configSelect.options.length; i++) {
-        if (configSelect.options[i].value === 'URL Configuration') {
-          exists = true;
-          break;
-        }
-      }
-      if (!exists) {
-        const option = document.createElement('option');
-        option.value = 'URL Configuration';
-        option.text = 'URL Configuration';
-        configSelect.add(option);
-      }
-      // Select the "URL Configuration"
-      configSelect.value = 'URL Configuration';
-    }
-  }
-}
-
-//?riskConfig=LOW:0-4;MEDIUM:4-7;HIGH:7-9

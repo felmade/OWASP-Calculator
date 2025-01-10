@@ -280,10 +280,10 @@ function getMappedRisk(L_class, I_class) {
     return mappingObj[key] || "ERROR";
 }
 
-// =========== Hilfsfunktion: URL-Parameter lesen ===========
 function checkRequiredParameters() {
     const requiredParams = ['likelihoodConfig', 'impactConfig', 'mapping'];
     const missingParams = [];
+    let foundParams = 0;
 
     // Überprüfen, ob die benötigten Parameter in der URL vorhanden sind
     requiredParams.forEach(param => {
@@ -291,11 +291,18 @@ function checkRequiredParameters() {
         const results = regex.exec(window.location.search);
         if (!results) {
             missingParams.push(param);
+        } else {
+            foundParams++;
         }
     });
 
-    // Wenn Parameter fehlen, Rückgabe false
-    if (missingParams.length > 0) {
+    // Wenn keine Parameter gefunden wurden, normale Logik ohne Warnung
+    if (foundParams === 0) {
+        return true;
+    }
+
+    // Wenn ein oder zwei Parameter fehlen, Warnung anzeigen
+    if (missingParams.length > 0 && missingParams.length < requiredParams.length) {
         swal({
             title: "Missing Parameters",
             text: `The following parameters are missing: ${missingParams.join(', ')}. Default configuration will be used.`,
@@ -305,7 +312,7 @@ function checkRequiredParameters() {
         return false;
     }
 
-    // Alle Parameter sind vorhanden
+    // Alle erforderlichen Parameter sind vorhanden
     return true;
 }
 
