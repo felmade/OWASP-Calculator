@@ -599,3 +599,92 @@ export function updateRiskLevelMapping(
       `RS class${RS.charAt(0).toUpperCase() + RS.slice(1).toLowerCase()}`
   );
 }
+
+/**
+ * buildHtmlRanges(configObj, title):
+ *  - Baut eine <table> mit minVal,maxVal => level aus z.B. {LOW:[0,3],MEDIUM:[3,6],...}
+ *  - title => z.B. "Likelihood" oder "Impact"
+ */
+function buildHtmlRanges(configObj, title) {
+  // Sortiere das Objekt nach minVal
+  const arr = [];
+  for (const lvl in configObj) {
+    const [minVal, maxVal] = configObj[lvl];
+    arr.push({ level: lvl, minVal, maxVal });
+  }
+  arr.sort((a,b) => a.minVal - b.minVal);
+
+  let html = `<h5>${title} Ranges</h5>`;
+  html += '<table class="table table-bordered table-sm">';
+  html += '<thead><tr><th>Range</th><th>Level</th></tr></thead>';
+  html += '<tbody>';
+  arr.forEach(item => {
+    const rangeStr = (item.maxVal === 9)
+        ? `${item.minVal} to ≤ ${item.maxVal}`
+        : `${item.minVal} to < ${item.maxVal}`;
+    html += `<tr>
+      <td>${rangeStr}</td>
+      <td>${item.level}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+/**
+ * buildHtmlMappingTable(likelihoodLevels, impactLevels, mappingObj)
+ *  - Baut NxM-Tabelle der Mappings: "likelihood-impact" => Wert
+ */
+function buildHtmlMappingTable(lLevels, iLevels, mapObj) {
+  let html = '<h5>Likelihood × Impact => Mapping</h5>';
+  html += '<table class="table table-bordered table-sm">';
+  // Kopfzeile
+  html += '<thead><tr><th>Likelihood \\ Impact</th>';
+  iLevels.forEach(imp => {
+    html += `<th>${imp}</th>`;
+  });
+  html += '</tr></thead>';
+
+  // Body
+  html += '<tbody>';
+  lLevels.forEach(lik => {
+    html += `<tr><th>${lik}</th>`;
+    iLevels.forEach(imp => {
+      const key = `${lik}-${imp}`.toUpperCase();
+      const val = mapObj[key] || '???';
+      html += `<td>${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+/**
+ * showDynamicRiskModal():
+ *  - Baut die Ranges (Likelihood & Impact) + NxM-Mapping HTML
+ *  - Fügt sie in ein Modal-Body ein
+ *  - Öffnet das Modal
+ */
+window.showDynamicRiskModal = function() {
+  import('./url_logic.js').then(module => {
+    const likeObj   = module.likelihoodConfigObj;
+    const impObj    = module.impactConfigObj;
+    const likeLvls  = module.likelihoodLevels;
+    const impLvls   = module.impactLevels;
+    const mapObj    = module.mappingObj;
+
+    console.log("DEBUG: likeObj =", likeObj, "impactObj =", impObj, "mapping =", mapObj);
+
+    const tableL = buildHtmlRanges(likeObj, "Likelihood");
+    const tableI = buildHtmlRanges(impObj,  "Impact");
+    const tableM = buildHtmlMappingTable(likeLvls, impLvls, mapObj);
+
+    const finalHtml = tableL + tableI + tableM;
+    const modalBody = document.getElementById('dynamicModalBody');
+    if (!modalBody) return;
+    modalBody.innerHTML = finalHtml;
+
+    $('#exampleModalCenter').modal('show');
+  });
+}

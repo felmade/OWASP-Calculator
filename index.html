@@ -278,7 +278,7 @@
     <div>
       <b>VECTOR: </b><a id="score" href="https://felmade.github.io/OWASP-Calculator/?vector=(SL:1/M:1/O:0/S:2/ED:1/EE:1/A:1/ID:0/LC:0/LI:0/LAV:0/LAC:0/FD:0/RD:0/NC:0/PV:0)" target="_blank">(SL:1/M:1/O:0/S:2/ED:1/EE:1/A:1/ID:2/LC:0/LI:0/LAV:0/LAC:0/FD:0/RD:0/NC:0/PV:0)</a>
       <br>
-      <a href="#exampleModalCenter" data-toggle="modal">How is Severity Risk calculated?</a>
+      <a href="javascript:void(0);" onclick="showDynamicRiskModal()">How is Severity Risk calculated?</a>
       <br>
       2021 OWASP Risk Assessment Calculator | Developed by <a href="https://hackpuntes.com" target="_blank"><span>Javier Olmedo</span></a> | Modified by <a href="https://github.com/Zylesto" target="_blank"><span>Felix Berger</span></a> | Original Source Code on <a href="https://github.com/JavierOlmedo/OWASP-Calculator" target="_blank"><span>Github</span></a> repository.
     </div>
@@ -286,93 +286,38 @@
 </main>
 
 <!-- MODAL -->
-<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<div class="modal fade" id="exampleModalCenter" tabindex="-1"
+     role="dialog" aria-labelledby="exampleModalCenterTitle"
+     aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
+
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLongTitle">How is Severity Risk calculated?</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <h5 class="modal-title" id="exampleModalLongTitle">
+          How is Severity Risk calculated?
+        </h5>
+        <button type="button" class="close" data-dismiss="modal"
+                aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body">
-        <div class="row">
-          <!-- LIKELIHOOD AND IMPACT LEVELS  -->
-          <section>
-            <table class="table table-bordered">
-              <thead>
-              <tr>
-                <th scope="col" colspan="2">Likelihood and Impact Levels</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr>
-                <td>0 to < 3</td>
-                <td class="classNote">LOW</td>
-              </tr>
-              <tr>
-                <td>3 to < 6</td>
-                <td class="classMedium">MEDIUM</td>
-              </tr>
-              <tr>
-                <td>6 to 9</td>
-                <td class="classHigh">HIGH</td>
-              </tr>
-              </tbody>
-            </table>
-          </section>
 
-          <!-- OVERALL RISK SEVERITY = LIKELIHOOD X IMPACT -->
-          <section>
-            <table class="table table-bordered">
-              <thead>
-              <tr>
-                <th scope="col" colspan="5">Overall Risk Severity = Likelihood x Impact</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr>
-                <td colspan="1" rowspan="4" style="vertical-align: middle; font-weight: bold">Impact</td>
-                <td>HIGH</td>
-                <td class="classMedium">Medium</td>
-                <td class="classHigh">High</td>
-                <td class="classCritical">Critical</td>
-              </tr>
-              <tr>
-                <td>MEDIUM</td>
-                <td class="classLow">Low</td>
-                <td class="classMedium">Medium</td>
-                <td class="classHigh">High</td>
-              </tr>
-              <tr>
-                <td>LOW</td>
-                <td class="classNote">Note</td>
-                <td class="classLow">Low</td>
-                <td class="classMedium">Medium</td>
-              </tr>
-              <tr>
-                <td></td>
-                <td>LOW</td>
-                <td>MEDIUM</td>
-                <td>HIGH</td>
-              </tr>
-              </tbody>
-              <thead>
-              <tr>
-                <th scope="col" colspan="1"></th>
-                <th scope="col" colspan="4">Likelihood</th>
-              </tr>
-              </thead>
-            </table>
-          </section>
-        </div>
+      <!-- Statt statischer Tabellen => LEERER Container: -->
+      <div class="modal-body" id="dynamicModalBody">
+        <!-- Hier wird JavaScript dynamisch die Tabellen einfügen -->
       </div>
+
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-dismiss="modal">OK!</button>
+        <button type="button" class="btn btn-primary"
+                data-dismiss="modal">
+          OK!
+        </button>
       </div>
+
     </div>
   </div>
 </div>
+
 
 <!-- SCRIPTS -->
 <script src="js/jquery.min.js"></script>

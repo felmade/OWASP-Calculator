@@ -346,7 +346,7 @@ describe('shouldUseUrlLogic()', () => {
         delete window.location;
         window.location = { search: '' };
         const result = shouldUseUrlLogic();
-        expect(result).toBe(true);
+        expect(result).toBe(false);
         expect(global.swal).not.toHaveBeenCalled();
     });
 
@@ -388,7 +388,7 @@ describe('shouldUseUrlLogic()', () => {
         delete window.location;
         window.location = { search: '?extraParam=123&anotherParam=456' };
         const result = shouldUseUrlLogic();
-        expect(result).toBe(true);
+        expect(result).toBe(false);
         expect(global.swal).not.toHaveBeenCalled();
     });
 

@@ -351,7 +351,7 @@ function checkRequiredParameters() {
 
     // Keine Parameter => fallback
     if (foundParams === 0) {
-        return true;
+        return false;
     }
 
     // 1 oder 2 fehlen => Warnung
