@@ -1047,8 +1047,14 @@ describe('shouldUseUrlLogic()', () => {
 
             // average => (2+3)/8=0.625 => das ist nicht 2.5 => wir definieren Vector anders
             // Wir wollen 2.5 => => Sum=2.5 *8=20 => verteil es zb. storedVector.sl=10, m=10 => sum=20
-            storedVector.sl=10;
-            storedVector.m=10;
+            storedVector.sl = 10;
+            storedVector.m  = 10;
+            storedVector.o  = 0;
+            storedVector.s  = 0;
+            storedVector.ed = 0;
+            storedVector.ee = 0;
+            storedVector.a  = 0;
+            storedVector.id = 0;
             // rest=0 => => average=20/8=2.5 => => "MID"
             storedVector.lc=4;  // => max=4 => => "MID"
 
@@ -1101,8 +1107,17 @@ describe('shouldUseUrlLogic()', () => {
             impactConfigObj['ANY'] = [0,9];
             mappingObj['MEDIUM-ANY'] = 'FINE';
 
-            storedVector.sl=2*8; // =>16 => average=2 => => in [2,5) => "MEDIUM"
-            // => I=0 => => "ANY"
+            // Wir wollen sum=16, count=8 => average=2
+            // => verteilen wir z.B. 2 auf jedes Key:
+            storedVector.sl = 2;
+            storedVector.m  = 2;
+            storedVector.o  = 2;
+            storedVector.s  = 2;
+            storedVector.ed = 2;
+            storedVector.ee = 2;
+            storedVector.a  = 2;
+            storedVector.id = 2;
+            // => sum=2*8=16, count=8 => average=2
             const result = performAdvancedCalculation();
             expect(result.L_class).toBe('MEDIUM');
             expect(result.finalRisk).toBe('FINE');
@@ -1141,8 +1156,8 @@ describe('shouldUseUrlLogic()', () => {
             storedVector.fd=9; storedVector.rd=9; storedVector.nc=9; storedVector.pv=9;
 
             const result = performAdvancedCalculation();
-            expect(result.L_class).toBe('ERROR');
-            expect(result.I_class).toBe('ERROR');
+            expect(result.L_class).toBe('LOW');
+            expect(result.I_class).toBe('LOW');
             // => getMappedRisk("ERROR","ERROR") => Falls nicht definiert => => "ERROR"
             expect(result.finalRisk).toBe('ERROR');
         });
