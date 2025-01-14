@@ -261,7 +261,6 @@ export function calculate() {
   const LS = calculateAverage(threatAgentFactors).toFixed(3);
   const IS = calculateMax(technicalImpactFactors).toFixed(3);
 
-  // Hier rufen wir getRisk(...) auf, das wir gleich definieren
   const FLS = getRisk(LS, selectedConfig);
   const FIS = getRisk(IS, selectedConfig);
 
@@ -512,7 +511,7 @@ function getUrlParameter(name) {
 
 /**
  * Fügt dem Dropdown die Option "URL Configuration" hinzu (falls noch nicht vorhanden),
- * wählt sie aus und sperrt auch Dropdown und Input-Felder (Optional).
+ * wählt sie aus und sperrt nur das Dropdown - EINGABEFELDER BLEIBEN FREI.
  */
 function addUrlConfigurationOption() {
   const configSelect = document.getElementById("configurationSelect");
@@ -530,14 +529,9 @@ function addUrlConfigurationOption() {
   // Wähle "URL Configuration"
   configSelect.value = "URL Configuration";
 
-  // Optional: Sperre das Dropdown
+  // Sperre nur das Dropdown, damit man nicht zurückswitcht,
+  // aber NICHT die Input-Felder => so bleibt es interaktiv
   configSelect.disabled = true;
-
-  // Optional: Sperre die 16 Eingabefelder
-  partials.forEach(factor => {
-    const el = document.getElementById(factor);
-    if (el) el.disabled = true;
-  });
 }
 
 // ===================================================
