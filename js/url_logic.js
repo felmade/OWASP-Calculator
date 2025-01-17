@@ -5,7 +5,7 @@
  * ========== INTERNAL STORAGE ==========
  * =====================================
  *
- * Hier legen wir die geparsten Daten ab:
+ * Hier liegen die geparsten Daten:
  * - likelihoodConfigObj, impactConfigObj, ...
  * - storedVector: { sl: number, m: number, ...} (optional)
  *   => Dieser wird bei jeder Berechnung aktualisiert,
