@@ -1,127 +1,157 @@
-<div align="center">
-  <h1>OWASP Risk Assessment Calculator</h1>
+# OWASP Risk Assessment Calculator – URL-Logik
 
-<h4>An online calculator to assess the risk of threats & vulnerabilities based on OWASP Risk Assessment.</h4>
+Dieses Dokument beschreibt die URL-Logik, mit der sich unser OWASP Risk Assessment Calculator konfigurieren lässt.
 
-<a align="center" href="https://" target="_blank">Link to ONLINE CALCULATOR</a>
+1. **Likelihood-Konfiguration** (`likelihoodConfig`)
+2. **Impact-Konfiguration** (`impactConfig`)
+3. **Mapping** (`mapping`)
+4. **Vector** (optional) (`vector`)
 
-Based on https://github.com/JavierOlmedo/OWASP-Calculator | Modified by <a href="https://github.com/Zylesto" target="_blank"><span>Felix Berger</span></a>
-
-</div>
+Auf diese Weise können Sie **flexiblere** Riskomatrixen (n×m) erstellen und zugleich die Eingabewerte (16 Faktoren) vorgeben.
 
 ---
 
-# Risiko-Bewertungs-Tool
+## Aufbau & Struktur der Parameter
 
-Dieses Tool berechnet ein Risikoniveau basierend auf verschiedenen Eingabefaktoren, ordnet diese einem **Likelihood-** (Wahrscheinlichkeits-) und einem **Impact-Level** (Auswirkungsgrad) zu und zeigt das Ergebnis als Radar-Chart an. Die Klassifizierung erfolgt mithilfe konfigurierbarer Schwellenwerte, die an unterschiedliche Konfigurationen gebunden sind.
+### 1) Likelihood-Konfiguration: `likelihoodConfig`
+- Format: `LEVEL:MIN-MAX;LEVEL2:MIN2-MAX2;...`
+- Beispiel (3-Level): likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9
 
-## Funktionsweise
+- **LOW**: 0 ≤ Wert < 3  
+- **MEDIUM**: 3 ≤ Wert < 6  
+- **HIGH**: 6 ≤ Wert ≤ 9  
 
-1. **Eingabefaktoren**  
-   Es gibt insgesamt 16 Faktoren, die das Risiko bestimmen. Diese werden in zwei Gruppen unterteilt:
-    - **Threat Agent Factors:** (z. B. Skills required, Motive, Opportunity, Population Size, Ease of Discovery, Ease of Exploit, Awareness, Intrusion Detection)
-    - **Technical Impact Factors:** (z. B. Loss of Confidentiality, Loss of Integrity, Loss of Availability, Loss of Accountability, Financial Damage, Reputation Damage, Non-Compliance, Privacy Violation)
+Sie können beliebig viele Level definieren; zum Beispiel für eine 5-stufige Skala:
+likelihoodConfig=LOW:0-2;MEDIUM:2-4;HIGH:4-6;VERY_HIGH:6-8;EXTREME:8-9
 
-   Der Nutzer kann diese Werte über Eingabefelder anpassen.
-
-2. **Berechnung von LS und IS**
-    - **LS (Likelihood Score):** Wird als Durchschnitt der Threat Agent Factors berechnet.
-    - **IS (Impact Score):** Ist der Maximalwert der Technical Impact Factors.
-
-3. **Kategorisierung anhand von Schwellenwerten**  
-   Anhand der berechneten Scores (LS und IS) werden Kategorien (LOW, MEDIUM, HIGH, CRITICAL) vergeben. Diese Kategorisierung basiert auf vordefinierten Intervallen, die je nach ausgewählter Konfiguration unterschiedlich sein können.
-
-   **Beispiel für halb-offene Intervalle:**
-    - LOW: 0 ≤ Wert < 3
-    - MEDIUM: 3 ≤ Wert < 6
-    - HIGH: 6 ≤ Wert ≤ 9
-
-   Hier gilt:
-    - Ein Wert von **2.5** ist LOW (weil 0 ≤ 2.5 < 3).
-    - Ein Wert von **3** ist MEDIUM (weil 3 ≤ 3 < 6).
-    - Ein Wert von **8.9** ist HIGH (weil 6 ≤ 8.9 ≤ 9).
-
-   Durch diese halboffenen Intervalle werden Überschneidungen vermieden. Der obere Grenzwert gehört nicht mehr zur vorherigen Kategorie, sondern signalisiert den Übergang zur nächsten.  
-   Möchten Sie, dass ein Wert an der Grenze noch zur vorherigen Kategorie zählt, müssten Sie das Intervall anpassen und z. B. inklusive obere Grenzen verwenden. Achten Sie dabei darauf, dass sich die Intervalle nicht überlappen.
-
-4. **Finales Risikoniveau (RS)**  
-   Aus den beiden Klassifizierungen (Likelihood und Impact) wird über eine eigene Logik ein finales Risikoniveau bestimmt (z. B. CRITICAL, HIGH, MEDIUM, LOW oder NOTE).
-
-## Darstellung im Radar-Chart
-
-Das Radar-Chart zeigt alle 16 Faktoren auf einen Blick. Die Farbe und Hintergrundfarbe des Charts ändern sich in Abhängigkeit vom finalen Risikoniveau. Dadurch erkennen Sie auf einen Blick die Schwere des Risikos.
-
-## Konfiguration über die URL
-
-Die Risikokonfigurationen und Eingabewerte können über URL-Parameter festgelegt werden. Dies ermöglicht es, voreingestellte Bewertungen direkt per Link aufzurufen.
-
-### URL-Konfiguration laden
-
-Wenn Sie einen Parameter `riskConfig` in der URL übergeben, kann das Skript dynamisch eine "URL Configuration" erstellen. Zum Beispiel: 
-
-?riskConfig=LOW:0-4;MEDIUM:4-7;HIGH:7-9
+**Hinweis:** Bitte achten Sie auf korrekte Schreibweise (keine Leerzeichen außer um `:` oder `-`):
 
 
-- Diese Zeichenkette legt folgende Bereiche fest:
-    - LOW: von 0 bis <4
-    - MEDIUM: von 4 bis <7
-    - HIGH: von 7 bis ≤9
+### 2) Impact-Konfiguration: `impactConfig`
+- Format identisch zu `likelihoodConfig`
+- Beispiel (ebenso 3-Level): impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9
 
-Nach dem Laden der Seite mit diesem Parameter wird automatisch "URL Configuration" als Option im Dropdown-Menü hinzugefügt und ausgewählt. Die Berechnung erfolgt dann auf Basis dieser neuen Konfiguration.
+- **NOTE**: 0 ≤ Wert < 3  
+- **LOW**: 3 ≤ Wert < 6  
+- **HIGH**: 6 ≤ Wert ≤ 9  
 
-### Vektoren übergeben
+### 3) Mapping: `mapping`
+- Beschreibt die **Matrix** (n×m) aus den definierten Likelihood- und Impact-Levels.
+- Die Anzahl der Einträge muss **genau** `n×m` sein.
+- **n**: Anzahl definierter Likelihood-Level
+- **m**: Anzahl definierter Impact-Level
+- Format: Kommagetrennte Liste (`,`) in der **exakten Reihenfolge** der Zeilen.
 
-Über den Parameter `vector` können Sie vordefinierte Werte für die 16 Faktoren laden. Zum Beispiel:
+Beispiel:  
+- Likelihood-Level = `[LOW, MEDIUM, HIGH]` (also 3 Stück)  
+- Impact-Level = `[NOTE, LOW, HIGH]` (also 3 Stück)  
+- => 3×3 = 9 Einträge: mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9
 
-?vector=(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:8/lc:9/li:10/lav:11/lac:12/fd:13/rd:14/nc:15/pv:16)
+Die Zuordnung lautet hierbei (in pseudocode, Zeile für Likelihood, Spalte für Impact):
 
+|     | NOTE | LOW  | HIGH |
+|-----|------|------|------|
+| LOW    | Val1 | Val2 | Val3 |
+| MEDIUM | Val4 | Val5 | Val6 |
+| HIGH   | Val7 | Val8 | Val9 |
 
-Diese Angabe setzt die jeweiligen Input-Felder automatisch auf die angegebenen Werte und führt anschließend die Berechnung durch.
+**Achtung**: Die Reihenfolge der Einträge in `mapping` **muss** exakt zu den sortierten Levels passen, die das Skript verwendet (siehe unten: Sortierung nach `minVal`).
 
-**Hinweis:** Stellen Sie sicher, dass das Format des `vector`-Strings korrekt ist. Ein ungültiges Format führt zu einer Fehlermeldung.
+### 4) Vector: `vector` (optional)
+- Legt die **16 Eingabefaktoren** fest, z. B. `(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:8/lc:9/li:10/lav:11/lac:12/fd:13/rd:14/nc:15/pv:16)`.
+- Format: (key:val/key:val/key:val/...)
 
-## Beispiel
+- **key** muss einer der 16 bekannten Faktoren sein (`sl, m, o, s, ed, ee, a, id, lc, li, lav, lac, fd, rd, nc, pv`).
+- **val** ist eine Zahl 0..9.
+- Beachten Sie Groß-/Kleinschreibung: das Skript erwartet kleingeschriebene Keys oder es wandelt sie evtl. entsprechend um.
+- Bei falschen Keys oder Werten > 9 gibt es eine **Fehlermeldung**.
 
-Angenommen, Sie möchten folgende Konfiguration und Werte laden:
+---
 
-- Neue Konfiguration:  
-  LOW: 0-3  
-  MEDIUM: 3-6  
-  HIGH: 6-9
+## Vollständiges URL-Beispiel
 
-- Eingabewerte für die Faktoren:
-    - Threat Agent (sl,m,o,s,ed,ee,a,id): 1,1,1,1,1,1,1,1
-    - Technical Impact (lc,li,lav,lac,fd,rd,nc,pv): 4,4,4,4,1,1,1,1
+Angenommen, Sie möchten:
+- 3-Likelihood-Level: `LOW, MEDIUM, HIGH`
+- 3-Impact-Level: `NOTE, LOW, HIGH`
+- 9 Einträge im Mapping
+- Vordefinierte Faktoren
 
-Rufen Sie die Seite auf mit: 
-
-?riskConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&vector=(sl:1/m:1/o:1/s:1/ed:1/ee:1/a:1/id:1/lc:4/li:4/lav:4/lac:4/fd:1/rd:1/nc:1/pv:1)
-
-Diese Angabe setzt die jeweiligen Input-Felder automatisch auf die angegebenen Werte und führt anschließend die 
-Berechnung durch.
-
-**Hinweis:** Stellen Sie sicher, dass das Format des `vector`-Strings korrekt ist. Ein ungültiges Format führt zu einer Fehlermeldung.
-
-## Beispiel
-
-Angenommen, Sie möchten folgende Konfiguration und Werte laden:
-
-?riskConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&vector=(sl:1/m:1/o:1/s:1/ed:1/ee:1/a:1/id:1/lc:4/li:4/lav:4/lac:4/fd:1/rd:1/nc:1/pv:1)
-
-
-Das Skript:
-- Lädt die "URL Configuration" mit den angegebenen Grenzen.
-- Setzt alle Werte aus dem `vector`.
-- Berechnet LS als Durchschnitt der Threat Agent Factors.
-- Berechnet IS als Maximalwert der Technical Impact Factors.
-- Bestimmt die Kategorien (LOW, MEDIUM, HIGH) für LS und IS.
-- Ermittelt daraus das finale Risikoniveau (z. B. LOW, MEDIUM, HIGH, CRITICAL).
-- Zeigt das Ergebnis im Radar-Chart und in den Ausgabe-Feldern an.
+Dann könnte Ihr URL-Aufruf so aussehen: ?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9 &vector=(sl:1/m:1/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)
 
 
+1. **likelihoodConfig** = `LOW:0-3;MEDIUM:3-6;HIGH:6-9`
+2. **impactConfig** = `NOTE:0-3;LOW:3-6;HIGH:6-9`
+3. **mapping** = `Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9`
+   - **n=3** (LOW, MEDIUM, HIGH)  
+   - **m=3** (NOTE, LOW, HIGH)  
+   - => 3×3 = 9 Werte
+4. **vector** = `(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)`
+
+### Ablauf im Skript
+
+1. Das Skript **parsed** `likelihoodConfig` und baut ein Objekt, z. B. `{LOW:[0,3],MEDIUM:[3,6],HIGH:[6,9]}`.
+2. Das Skript **parsed** `impactConfig` und baut ebenfalls ein Objekt, z. B. `{NOTE:[0,3],LOW:[3,6],HIGH:[6,9]}`.
+3. **Mapping** wird zu einer Matrix gemapped:  
+   - `LOW-NOTE` => Val1  
+   - `LOW-LOW` => Val2  
+   - `LOW-HIGH` => Val3  
+   - `MEDIUM-NOTE` => Val4  
+   - ...  
+   - `HIGH-HIGH` => Val9
+4. Falls `vector` vorhanden ist, wird es ausgewertet und die Eingabefelder (z. B. `sl`, `m`, `o`) werden direkt befüllt.
+5. Daraus werden:
+   - **LS** (Durchschnitt)  
+   - **IS** (Maximum)
+6. **Likelihood-Klasse** (z. B. LOW) und **Impact-Klasse** (z. B. HIGH) werden bestimmt, woraus sich per `mappingObj` das finale Risiko (z. B. Val3) ergibt.
+
+---
+
+## Fehlerfälle
+
+- **Fehlende Parameter**  
+  Wenn `likelihoodConfig`, `impactConfig` oder `mapping` fehlt, zeigt das Skript eine **Warnung** an und fällt ggf. auf eine Standardkonfiguration zurück.
+- **Falsches Format**  
+  - Bei `likelihoodConfig=LOW:0-ABC;HIGH:2-9` wird `ABC` als ungültig erkannt => Fehlermeldung.  
+  - Bei `mapping` mit zu wenig oder zu vielen Einträgen => Fehlermeldung.
+- **Unbekannte Keys** im `vector` => Wird ignoriert oder es erfolgt eine Warnung in der Konsole.
+- **Werte > 9** im `vector` => Error.
+
+---
+
+## Weitere Beispiele
+
+### A) 2×2 Matrix 
+?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4&vector=(sl:1/m:1/o:0/s:5/ed:1/ee:1/a:3/id:2/lc:4/li:0/lav:0/lac:1/fd:2/rd:2/nc:0/pv:0)
+
+- Likelihood-Level: `LOW, HIGH`  
+- Impact-Level: `MINOR, MAJOR`  
+- mapping =>  
+  - LOW-MINOR => Val1  
+  - LOW-MAJOR => Val2  
+  - HIGH-MINOR => Val3  
+  - HIGH-MAJOR => Val4  
+
+### B) 4×3 Matrix  
+?likelihoodConfig=L0:0-2;L1:2-4;L2:4-6;L3:6-9 &impactConfig=I0:0-3;I1:3-6;I2:6-9&mapping=U1,U2,U3,U4,U5,U6,U7,U8,U9,U10,U11,U12&vector=(sl:0/m:1/o:0/s:9/ed:1/ee:5/a:1/id:1/lc:3/li:5/lav:2/lac:8/fd:3/rd:2/nc:0/pv:0)
+
+- Likelihood = 4 Level (`L0, L1, L2, L3`)
+- Impact = 3 Level (`I0, I1, I2`)
+- => 4×3 = 12 Einträge in `mapping`
+- Der Rest analog.
+
+---
+
+## Zusammenfassung
+
+1. Verwenden Sie **vier** Parameter: `likelihoodConfig`, `impactConfig`, `mapping`, `vector`.
+2. *Alle* sind Pflicht (außer `vector`, das optional ist).  
+3. Je nach Größe (Anzahl Level) von `likelihoodConfig` und `impactConfig` wird die **Anzahl** der benötigten Einträge in `mapping` bestimmt (`n × m`).
+4. `vector` darf beliebig weggelassen werden. Dann bleiben die Eingabefelder leer bzw. Standard `0`.
+5. Das Skript erstellt die **Berechnung** (LS & IS) und das **finale Risiko** mithilfe der `mapping`-Matrix.  
+6. **Radar-Chart** und **Ausgabetexte** werden automatisch aktualisiert.
+
+Mit dieser **URL-Logik** können Sie komplexe n×m-Matrizen definieren und dazu passende Vektoren (16 Faktoren) direkt einbinden.
 
 
 
-
- 
 
