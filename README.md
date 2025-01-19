@@ -1,6 +1,6 @@
 # OWASP Risk Assessment Calculator – URL-Logik
 
-Dieses Dokument beschreibt die URL-Logik, mit der sich unser OWASP Risk Assessment Calculator konfigurieren lässt. Die bisherigen Parameter wie `?riskConfig=...` existieren nicht mehr. Stattdessen zerlegen wir die Konfiguration in einzelne Bausteine:
+Dieses Dokument beschreibt die URL-Logik, mit der sich unser OWASP Risk Assessment Calculator konfigurieren lässt.
 
 1. **Likelihood-Konfiguration** (`likelihoodConfig`)
 2. **Impact-Konfiguration** (`impactConfig`)
@@ -76,7 +76,7 @@ Angenommen, Sie möchten:
 - 9 Einträge im Mapping
 - Vordefinierte Faktoren
 
-Dann könnte Ihr URL-Aufruf so aussehen: ?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9 &impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9 &mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9 &vector=(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)
+Dann könnte Ihr URL-Aufruf so aussehen: ?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9 &vector=(sl:1/m:1/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)
 
 
 1. **likelihoodConfig** = `LOW:0-3;MEDIUM:3-6;HIGH:6-9`
@@ -121,7 +121,7 @@ Dann könnte Ihr URL-Aufruf so aussehen: ?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HI
 ## Weitere Beispiele
 
 ### A) 2×2 Matrix 
-?likelihoodConfig=LOW:0-2;HIGH:2-9 &impactConfig=MINOR:0-5;MAJOR:5-9 &mapping=Val1,Val2,Val3,Val4 &vector=(sl:1/m:2/o:0/s:5/ed:1/ee:1/a:3/id:2/lc:4/li:0/lav:0/lac:1/fd:2/rd:2/nc:0/pv:0)
+?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4&vector=(sl:1/m:1/o:0/s:5/ed:1/ee:1/a:3/id:2/lc:4/li:0/lav:0/lac:1/fd:2/rd:2/nc:0/pv:0)
 
 - Likelihood-Level: `LOW, HIGH`  
 - Impact-Level: `MINOR, MAJOR`  
@@ -132,7 +132,7 @@ Dann könnte Ihr URL-Aufruf so aussehen: ?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HI
   - HIGH-MAJOR => Val4  
 
 ### B) 4×3 Matrix  
-?likelihoodConfig=L0:0-2;L1:2-4;L2:4-6;L3:6-9 &impactConfig=I0:0-3;I1:3-6;I2:6-9 &mapping=U1,U2,U3,U4,U5,U6,U7,U8,U9,U10,U11,U12 &vector=(sl:0/m:0/o:0/s:9/ed:1/ee:5/a:1/id:1/lc:3/li:5/lav:2/lac:8/fd:3/rd:2/nc:0/pv:0)
+?likelihoodConfig=L0:0-2;L1:2-4;L2:4-6;L3:6-9 &impactConfig=I0:0-3;I1:3-6;I2:6-9&mapping=U1,U2,U3,U4,U5,U6,U7,U8,U9,U10,U11,U12&vector=(sl:0/m:1/o:0/s:9/ed:1/ee:5/a:1/id:1/lc:3/li:5/lav:2/lac:8/fd:3/rd:2/nc:0/pv:0)
 
 - Likelihood = 4 Level (`L0, L1, L2, L3`)
 - Impact = 3 Level (`I0, I1, I2`)
@@ -150,7 +150,7 @@ Dann könnte Ihr URL-Aufruf so aussehen: ?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HI
 5. Das Skript erstellt die **Berechnung** (LS & IS) und das **finale Risiko** mithilfe der `mapping`-Matrix.  
 6. **Radar-Chart** und **Ausgabetexte** werden automatisch aktualisiert.
 
-Mit dieser **URL-Logik** können Sie komplexe n×m-Matrizen definieren und dazu passende Vektoren (16 Faktoren) direkt einbinden – flexibler und klarer als mit dem alten `riskConfig`-Ansatz.
+Mit dieser **URL-Logik** können Sie komplexe n×m-Matrizen definieren und dazu passende Vektoren (16 Faktoren) direkt einbinden.
 
 
 

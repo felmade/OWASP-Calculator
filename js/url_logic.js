@@ -154,14 +154,27 @@ export function performAdvancedCalculation() {
     const LSElem = document.querySelector('.LS');
     if (LSElem) {
         LSElem.textContent = `${L_score.toFixed(3)} ${L_class}`;
+        LSElem.style.fontWeight = 'bold';
+        LSElem.style.fontSize = '24px';
     }
+
     const ISElem = document.querySelector('.IS');
     if (ISElem) {
         ISElem.textContent = `${I_score.toFixed(3)} ${I_class}`;
+        ISElem.style.fontWeight = 'bold';
+        ISElem.style.fontSize = '24px';
     }
+
     const RSElem = document.querySelector('.RS');
     if (RSElem) {
         RSElem.textContent = finalRisk;
+        RSElem.style.fontWeight = 'bold';
+        RSElem.style.fontSize = '24px';
+    }
+
+    const VectorElement = document.querySelector('.vector');
+    if (VectorElement) {
+        VectorElement.style.visibility = 'hidden';
     }
 
     const result = { L_score, I_score, L_class, I_class, finalRisk };

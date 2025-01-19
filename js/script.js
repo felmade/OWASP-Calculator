@@ -643,7 +643,7 @@ function buildHtmlRanges(configObj, title) {
 function buildHtmlMappingTable(lLevels, iLevels, mapObj) {
   let html = "<h5>Likelihood × Impact => Mapping</h5>";
   html += '<table class="table table-bordered table-sm">';
-  html += `<thead><tr><th>Likelihood \\ Impact</th>`;
+  html += `<thead><tr><th>Likelihood (Rows) \\ Impact (Columns)</th>`;
   iLevels.forEach(imp => {
     html += `<th>${imp}</th>`;
   });
