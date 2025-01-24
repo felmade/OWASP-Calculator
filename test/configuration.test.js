@@ -23,9 +23,8 @@ import {
 
 /**
  * --------------------------------------
- * Erweiterte Matcher für Jest.
- * Beispiel: "toBeEmpty", um zu prüfen,
- * ob ein Objekt keine eigenen Keys hat.
+ * Extended Matchers for Jest.
+ * Example: "toBeEmpty" to check if an object has no own keys.
  * --------------------------------------
  */
 expect.extend({
@@ -47,7 +46,7 @@ expect.extend({
 
 /**
  * --------------------------------------
- * TEST-SUITE: updateRiskLevelMapping()
+ * TEST SUITE: updateRiskLevelMapping()
  * --------------------------------------
  */
 describe('updateRiskLevelMapping() with testMode enabled', () => {
@@ -65,7 +64,7 @@ describe('updateRiskLevelMapping() with testMode enabled', () => {
         console.log = originalLog;
     });
 
-    // Verschiedene Test-Cases für L_score, I_score => erwartete (L_class, I_class, RS)
+    // Various test cases for L_score, I_score => expected (L_class, I_class, RS)
     const testCases = [
         // --- Default Configuration ---
         {
@@ -166,7 +165,7 @@ describe('updateRiskLevelMapping() with testMode enabled', () => {
         },
     ];
 
-    // Vor allen Tests => sorge dafür, dass "URL Configuration" existiert
+    // Before all tests => ensure "URL Configuration" exists
     beforeAll(() => {
         riskConfigurations['URL Configuration'] = {
             LOW: [0, 2],
@@ -175,7 +174,7 @@ describe('updateRiskLevelMapping() with testMode enabled', () => {
         };
     });
 
-    // Pro Testfall => rufe updateRiskLevelMapping(testMode=true,...) auf
+    // For each test case => call updateRiskLevelMapping(testMode=true, ...)
     testCases.forEach(({ config, inputs, expected }, index) => {
         test(`Test Case ${index + 1} for ${config}`, () => {
             const result = updateRiskLevelMapping(
@@ -191,12 +190,12 @@ describe('updateRiskLevelMapping() with testMode enabled', () => {
 
 /**
  * --------------------------------------
- * TEST-SUITE: loadVectors()
+ * TEST SUITE: loadVectors()
  * --------------------------------------
  */
 describe('loadVectors()', () => {
     beforeEach(() => {
-        // DOM aufbauen: 16 Input-Felder
+        // Set up DOM: 16 input fields
         const partials = [
             "sl","m","o","s","ed","ee","a","id",
             "lc","li","lav","lac","fd","rd","nc","pv"
@@ -210,7 +209,7 @@ describe('loadVectors()', () => {
     });
 
     afterEach(() => {
-        // DOM wieder aufräumen
+        // Clean up DOM
         document.body.innerHTML = '';
     });
 
@@ -262,7 +261,7 @@ describe('loadVectors()', () => {
 
 /**
  * --------------------------------------
- * TEST-SUITE: loadVectors() (zweiter Block)
+ * TEST SUITE: loadVectors() (second block)
  * --------------------------------------
  */
 describe('loadVectors()', () => {
@@ -329,7 +328,7 @@ describe('loadVectors()', () => {
 
 /**
  * --------------------------------------
- * TEST-SUITE: shouldUseUrlLogic()
+ * TEST SUITE: shouldUseUrlLogic()
  * --------------------------------------
  */
 describe('shouldUseUrlLogic()', () => {
@@ -415,11 +414,11 @@ describe('shouldUseUrlLogic()', () => {
 
     /**
      * --------------------------------------
-     * TEST-SUITE: parseUrlParameters()
+     * TEST SUITE: parseUrlParameters()
      * --------------------------------------
      */
     describe('parseUrlParameters()', () => {
-        // Hilfsfunktion: window.location.search setzen
+        // Helper function: set window.location.search
         function setLocationSearch(searchString) {
             delete window.location;
             window.location = { search: searchString };
@@ -459,7 +458,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 4 ---
-        test('3×3 => 9 Mappings nötig, nur 8 => fail', () => {
+        test('3×3 => need 9 mappings, only 8 => fail', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9'
                 + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
                 + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8');
@@ -469,7 +468,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 5 ---
-        test('Gültige 2×2-Matrix + vector => should succeed => returns true', () => {
+        test('Valid 2×2 matrix + vector => should succeed => returns true', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
                 + '&impactConfig=MINOR:0-5;MAJOR:5-9'
                 + '&mapping=Val1,Val2,Val3,Val4'
@@ -495,7 +494,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 6 ---
-        test('3×3, kein Vector => should succeed => storedVector={} => true', () => {
+        test('3×3, no vector => should succeed => storedVector={} => true', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9'
                 + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
                 + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9');
@@ -504,11 +503,11 @@ describe('shouldUseUrlLogic()', () => {
             expect(global.swal).not.toHaveBeenCalled();
 
             const vec = getStoredVector();
-            expect(vec).toBeEmpty(); // erweiterter Matcher
+            expect(vec).toBeEmpty(); // extended matcher
         });
 
         // --- TEST 7 ---
-        test('Ungültige numeric range => fail => swal', () => {
+        test('Invalid numeric range => fail => swal', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-ABC;HIGH:2-9'
                 + '&impactConfig=MINOR:0-4;MAJOR:4-9'
                 + '&mapping=Val1,Val2,Val3,Val4');
@@ -518,7 +517,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 8 ---
-        test('Leerer likelihoodConfig => fail => swal', () => {
+        test('Empty likelihoodConfig => fail => swal', () => {
             setLocationSearch('?likelihoodConfig='
                 + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
                 + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9');
@@ -528,7 +527,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 9 ---
-        test('Leerer impactConfig => fail => swal', () => {
+        test('Empty impactConfig => fail => swal', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-3;HIGH:3-9'
                 + '&impactConfig='
                 + '&mapping=Val1,Val2,Val3,Val4');
@@ -538,7 +537,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 10 ---
-        test('Leeres mapping => fail => swal', () => {
+        test('Empty mapping => fail => swal', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-3;HIGH:3-9'
                 + '&impactConfig=MINOR:0-4;MAJOR:4-9'
                 + '&mapping=');
@@ -548,7 +547,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 11 ---
-        test('Mehr Einträge als nötig => fail => swal', () => {
+        test('More entries than needed => fail => swal', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
                 + '&impactConfig=MINOR:0-2;MAJOR:2-9'
                 + '&mapping=Val1,Val2,Val3,Val4,Val5');
@@ -558,7 +557,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 12 ---
-        test('2×2, gemischte Case => OK => check mapObj keys', () => {
+        test('2×2, mixed case => OK => check mapObj keys', () => {
             setLocationSearch('?likelihoodConfig=LoW:0-2;hIgH:2-9'
                 + '&impactConfig=mInOr:0-5;MaJoR:5-9'
                 + '&mapping=someVal,AnotherVal,ThirdVal,FourthVal');
@@ -574,7 +573,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 13 ---
-        test('5×3 => 15 Mappings => true => no swal', () => {
+        test('5×3 => 15 mappings => true => no swal', () => {
             setLocationSearch('?likelihoodConfig=VERY_LOW:0-1;LOW:1-3;MEDIUM:3-5;HIGH:5-7;EXTREME:7-9'
                 + '&impactConfig=NOTE:0-2;LOW:2-5;HIGH:5-9'
                 + '&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15');
@@ -595,7 +594,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 15 ---
-        test('Vector mit falschen Segmenten => fail => parseVector => Error', () => {
+        test('Vector with wrong segments => fail => parseVector => Error', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
                 + '&impactConfig=LOW:0-5;HIGH:5-9'
                 + '&mapping=Val1,Val2,Val3,Val4'
@@ -606,7 +605,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 16 ---
-        test('Vector Zahl > 9 => parseVector => Error => false => swal', () => {
+        test('Vector number > 9 => parseVector => Error => false => swal', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
                 + '&impactConfig=LOW:0-5;HIGH:5-9'
                 + '&mapping=Val1,Val2,Val3,Val4'
@@ -617,7 +616,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 17 ---
-        test('Vector unbekannter Key => nur warn => returns true => check sl=2', () => {
+        test('Vector unknown key => just warn => returns true => check sl=2', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
                 + '&impactConfig=LOW:0-5;HIGH:5-9'
                 + '&mapping=Val1,Val2,Val3,Val4'
@@ -631,7 +630,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 18 ---
-        test('Likelihood config doppelt => fail => swal', () => {
+        test('Likelihood config duplicated => fail => swal', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;LOW:2-4;HIGH:4-9'
                 + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
                 + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9');
@@ -645,7 +644,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // --- TEST 19 ---
-        test('impactConfig mit leerem Level => fail => parseConfiguration => Error', () => {
+        test('impactConfig with empty level => fail => parseConfiguration => Error', () => {
             setLocationSearch('?likelihoodConfig=LOW:0-2;MEDIUM:2-5'
                 + '&impactConfig=:0-2;HIGH:2-9'
                 + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6');
@@ -671,18 +670,18 @@ describe('shouldUseUrlLogic()', () => {
 
     /**
      * --------------------------------------
-     * TEST-SUITE: performAdvancedCalculation()
+     * TEST SUITE: performAdvancedCalculation()
      * --------------------------------------
      */
     describe('performAdvancedCalculation() tests', () => {
         /**
-         * Vor jedem Test:
-         * - likelihoodConfigObj, impactConfigObj, mappingObj leeren
-         * - storedVector leeren (oder = {})
-         * - JS-DOM (LS, IS, RS) neu aufbauen
+         * Before each test:
+         * - Clear likelihoodConfigObj, impactConfigObj, mappingObj
+         * - Clear storedVector (or = {})
+         * - Rebuild JS-DOM (LS, IS, RS)
          */
         beforeEach(() => {
-            // 1) Config-Objekte leeren
+            // 1) Clear config objects
             for (const k in likelihoodConfigObj) delete likelihoodConfigObj[k];
             for (const k in impactConfigObj) delete impactConfigObj[k];
             for (const k in mappingObj) delete mappingObj[k];
@@ -694,7 +693,7 @@ describe('shouldUseUrlLogic()', () => {
                 storedVector = {};
             }
 
-            // 3) DOM aufräumen / neu
+            // 3) Clean up / new DOM
             document.body.innerHTML = `
         <div class="LS"></div>
         <div class="IS"></div>
@@ -703,30 +702,30 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 1 ==============
-        test('1) Keine config => return null => console.error', () => {
+        test('1) No config => return null => console.error', () => {
             const result = performAdvancedCalculation();
             expect(result).toBeNull();
-            // Hier könnte man z.B. console.error spy-en, um die Fehlermeldung zu prüfen.
+            // One could spy on console.error here to check the error message.
         });
 
         // ============== TEST 2 ==============
-        test('2) Config ja, Mapping nein => null', () => {
+        test('2) Config yes, no mapping => null', () => {
             likelihoodConfigObj['LOW'] = [0, 3];
             impactConfigObj['LOW'] = [0, 3];
-            // mappingObj leer
+            // mappingObj empty
             const result = performAdvancedCalculation();
             expect(result).toBeNull();
         });
 
         // ============== TEST 3 ==============
-        test('3) Alles vorhanden, storedVector=null => L=0, I=0 => finalRisk', () => {
+        test('3) Everything present, storedVector=null => L=0, I=0 => finalRisk', () => {
             likelihoodConfigObj['LOW'] = [0, 4];
             impactConfigObj['LOW'] = [0, 4];
             mappingObj['LOW-LOW'] = "TEST_RISK";
 
             // storedVector = null => => fallback => L=I=0
             if (storedVector && typeof storedVector === 'object') {
-                // Alle Keys entfernen
+                // Remove all keys
                 Object.keys(storedVector).forEach(k => delete storedVector[k]);
             }
 
@@ -747,7 +746,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 4 ==============
-        test('4) Mit Vector => average / max => finalRisk', () => {
+        test('4) With vector => average / max => finalRisk', () => {
             likelihoodConfigObj['LOW'] = [0, 2];
             likelihoodConfigObj['MEDIUM'] = [2, 5];
             impactConfigObj['MINOR'] = [0, 3];
@@ -757,7 +756,7 @@ describe('shouldUseUrlLogic()', () => {
             mappingObj['MEDIUM-MINOR'] = 'WARNING';
             mappingObj['MEDIUM-MAJOR'] = 'DANGER';
 
-            // Threat keys (8 Felder) => average
+            // Threat keys (8 fields) => average
             storedVector.sl = 1;
             storedVector.m  = 3;
             storedVector.o  = 5;
@@ -767,7 +766,7 @@ describe('shouldUseUrlLogic()', () => {
             storedVector.a  = 0;
             storedVector.id = 0;
 
-            // Impact keys (8 Felder) => max
+            // Impact keys (8 fields) => max
             storedVector.lc  = 2;
             storedVector.li  = 2;
             storedVector.lav = 6;
@@ -788,7 +787,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 5 ==============
-        test('5) L_score am oberen Rand => check Range-Grenze (value=2 => >=2 => MEDIUM)', () => {
+        test('5) L_score at upper edge => check range boundary (value=2 => >=2 => MEDIUM)', () => {
             likelihoodConfigObj['LOW'] = [0, 2];
             likelihoodConfigObj['MEDIUM'] = [2, 5];
             impactConfigObj['LOW'] = [0, 5];
@@ -821,7 +820,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 6 ==============
-        test('6) Impact negativ => I_class="ERROR" => finalRisk="ERROR"', () => {
+        test('6) Impact negative => I_class="ERROR" => finalRisk="ERROR"', () => {
             likelihoodConfigObj['LOW'] = [0, 5];
             impactConfigObj['LOW'] = [0, 5];
             mappingObj['LOW-LOW'] = 'OK';
@@ -844,7 +843,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 7 ==============
-        test('7) UI-Update => Felder existieren => check .LS, .IS, .RS', () => {
+        test('7) UI update => fields exist => check .LS, .IS, .RS', () => {
             likelihoodConfigObj['LOW'] = [0, 5];
             impactConfigObj['HIGH'] = [5, 9];
             mappingObj['LOW-HIGH'] = 'TEST-RISK';
@@ -878,8 +877,8 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 8 ==============
-        test('8) UI-Update => Felder NICHT vorhanden => kein Fehler => normal', () => {
-            // DOM leeren
+        test('8) UI update => fields NOT existing => no error => normal', () => {
+            // Clear DOM
             document.body.innerHTML = '';
             likelihoodConfigObj['LOW'] = [0, 9];
             impactConfigObj['LOW'] = [0, 9];
@@ -888,7 +887,7 @@ describe('shouldUseUrlLogic()', () => {
             storedVector.sl=4;
             const out = performAdvancedCalculation();
             expect(out).not.toBeNull();
-            // Kein .LS/.IS => kein Crash
+            // No .LS/.IS => no crash
         });
 
         // ============== TEST 9 ==============
@@ -902,11 +901,11 @@ describe('shouldUseUrlLogic()', () => {
             // L=7 => average=7 => "ERROR"
             storedVector.sl=7*8; // sum=56 => 56/8=7
             // I=0 => => "HIGH" => => finalRisk => "ERROR"
-            // (mappingObj['ERROR-HIGH']="IMPOSSIBLE"? => aber wir checken, ob du "ERROR" blockierst)
+            // (mappingObj['ERROR-HIGH']="IMPOSSIBLE"? => but we check if "ERROR" is blocked)
             mappingObj['ERROR-HIGH'] = 'IMPOSSIBLE';
 
             const r = performAdvancedCalculation();
-            // Der Code (getMappedRisk) => if L_class===ERROR => return "ERROR"
+            // The code (getMappedRisk) => if L_class===ERROR => return "ERROR"
             expect(r.finalRisk).toBe('ERROR');
         });
 
@@ -928,7 +927,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 11 ==============
-        test('11) Runde Werte => average=2.500 => "2.500 MID"', () => {
+        test('11) Rounded values => average=2.500 => "2.500 MID"', () => {
             likelihoodConfigObj['MID']=[0,9];
             impactConfigObj['MID']=[0,9];
             mappingObj['MID-MID']='OK';
@@ -995,7 +994,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 14 ==============
-        test('14) "Edge" => L_score = minVal => => in Range ([2,5)) => "MEDIUM"', () => {
+        test('14) "Edge" => L_score = minVal => => in range ([2,5)) => "MEDIUM"', () => {
             likelihoodConfigObj['MEDIUM']=[2,5];
             impactConfigObj['ANY']=[0,9];
             mappingObj['MEDIUM-ANY']='FINE';
@@ -1016,7 +1015,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 15 ==============
-        test('15) Kein Vector => L=I=0 => finalRisk=OK => normal run', () => {
+        test('15) No vector => L=I=0 => finalRisk=OK => normal run', () => {
             likelihoodConfigObj['LOW']=[0,9];
             impactConfigObj['LOW']=[0,9];
             mappingObj['LOW-LOW']='OK';
@@ -1053,7 +1052,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 17 ==============
-        test('17) mix => L=4.5 => MEDIUM => I=3 => "LOW"? => finalRisk=ML oder so', () => {
+        test('17) mix => L=4.5 => MEDIUM => I=3 => "LOW"? => finalRisk=ML or similar', () => {
             likelihoodConfigObj['LOW']=[0,3];
             likelihoodConfigObj['MEDIUM']=[3,5];
             likelihoodConfigObj['HIGH']=[5,9];
@@ -1099,7 +1098,7 @@ describe('shouldUseUrlLogic()', () => {
         });
 
         // ============== TEST 19 ==============
-        test('19) sehr negative => average=-100 => L=ERROR => => final=ERROR', () => {
+        test('19) very negative => average=-100 => L=ERROR => => final=ERROR', () => {
             likelihoodConfigObj['LOW']=[0,3];
             likelihoodConfigObj['MEDIUM']=[3,6];
             impactConfigObj['ANY']=[0,9];

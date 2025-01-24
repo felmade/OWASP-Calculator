@@ -1,37 +1,36 @@
 "use strict";
 
 /**
- * Dieses Skript verwaltet die zentrale Logik für das OWASP Risk Assessment
- * Calculator-Frontend. Es stellt u.a. die Fallback-Konfiguration (Default,
- * Configuration 1-3), das Chart.js-Radar-Diagramm sowie verschiedene
- * Hilfsfunktionen zum Lesen der Eingabefelder, Berechnungen und UI-Updates bereit.
+ * This script manages the central logic for the OWASP Risk Assessment Calculator frontend.
+ * It provides, among other things, the fallback configuration (Default, Configuration 1-3),
+ * the Chart.js radar diagram, and various helper functions for reading input fields,
+ * performing calculations, and updating the UI.
  *
- * Die hier definierte Logik wird verwendet, wenn KEIN erfolgreicher
- * URL-Logik-/Parameter-Parse stattfindet (oder wenn der User manuell
- * eine der Standard-Konfigurationen wählt).
+ * The logic defined here is used when NO successful URL logic/parameter parsing takes
+ * place (or when the user manually selects one of the standard configurations).
  */
 
 import {
   parseUrlParameters,
   performAdvancedCalculation,
   shouldUseUrlLogic,
-  // Exportierte globale Variable (read-only) aus url_logic
+  // Exported global variable (read-only) from url_logic
   storedVector
 } from "./url_logic.js";
 
 /**
  * CANVAS / CHART.JS
  * -----------------
- * Canvas-Element für das Radar-Chart (inkl. 2D-Kontext und Chart-Instanz).
+ * Canvas element for the radar chart (including 2D context and chart instance).
  */
 let riskChartElement = null;
 let riskChartCtx = null;
 let riskChart = null;
 
 /**
- * FARB-SETTINGS
- * -------------
- * Reihenfolge der Farbzuordnungen (CRITICAL → HIGH → MEDIUM → LOW → NOTE).
+ * COLOR SETTINGS
+ * --------------
+ * Order of color assignments (CRITICAL → HIGH → MEDIUM → LOW → NOTE).
  */
 const colors = [
   "rgba(255, 102, 255)",  // Critical
@@ -50,9 +49,9 @@ const backgrounds = [
 ];
 
 /**
- * THREATS-ARRAY
+ * THREATS ARRAY
  * -------------
- * Beschriftungen für das Radar-Diagramm (16 OWASP-Faktoren).
+ * Labels for the radar diagram (16 OWASP factors).
  */
 const threats = [
   "Skills required", "Motive", "Opportunity", "Population Size",
@@ -62,10 +61,10 @@ const threats = [
 ];
 
 /**
- * STANDARD-RISK-KONFIGURATIONEN
- * -----------------------------
- * Hier definieren wir mehrere 3×3-Varianten (z.B. 'Default Configuration').
- * Je nach Auswahl im Dropdown wird daraus LOW, MEDIUM und HIGH abgeleitet.
+ * STANDARD RISK CONFIGURATIONS
+ * ----------------------------
+ * Here we define several 3×3 variants (e.g. 'Default Configuration').
+ * Depending on the selection in the dropdown, LOW, MEDIUM, and HIGH are derived.
  */
 export const riskConfigurations = {
   "Default Configuration": {
@@ -91,9 +90,9 @@ export const riskConfigurations = {
 };
 
 /**
- * OWASP-STANDARD-MAPPING (3×3)
+ * OWASP STANDARD MAPPING (3×3)
  * ----------------------------
- * Dies ist die feste 9-Felder-Matrix für "LOW,MEDIUM,HIGH" × "LOW,MEDIUM,HIGH".
+ * This is the fixed 9-cell matrix for "LOW, MEDIUM, HIGH" × "LOW, MEDIUM, HIGH".
  */
 const owaspMapping = {
   "LOW-LOW": "NOTE",
@@ -108,9 +107,9 @@ const owaspMapping = {
 };
 
 /**
- * PARTIALS-ARRAY
+ * PARTIALS ARRAY
  * --------------
- * 16 IDs der Eingabefelder (Threat + Impact) in der HTML-Oberfläche.
+ * 16 IDs of input fields (Threat + Impact) in the HTML interface.
  */
 const partials = [
   "sl", "m", "o", "s", "ed", "ee", "a", "id",
@@ -118,9 +117,9 @@ const partials = [
 ];
 
 /**
- * CHART-OPTIONS
+ * CHART OPTIONS
  * -------------
- * Konfiguration für das Radar-Chart (Chart.js).
+ * Configuration for the radar chart (Chart.js).
  */
 const riskChartOptions = {
   legend: {
@@ -144,12 +143,12 @@ const riskChartOptions = {
 /**
  * DOMCONTENTLOADED
  * ----------------
- * Bei Seitenaufruf:
- * 1) Radar-Chart initialisieren
- * 2) Dropdown-Listener
- * 3) Check auf 'vector' in URL
- * 4) Input-Felder => onChange => calculate()
- * 5) Erster Aufruf von calculate().
+ * On page load:
+ * 1) Initialize the radar chart
+ * 2) Add a dropdown listener
+ * 3) Check for 'vector' in the URL
+ * 4) Input fields => onChange => calculate()
+ * 5) First call of calculate().
  */
 document.addEventListener("DOMContentLoaded", () => {
   // 1) Chart init
@@ -196,15 +195,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 5) Einmal calculate
+  // 5) First call of calculate()
   calculate();
 });
 
 /**
- * EXTERNE EXPORTS FÜR HTML
- * ------------------------
- * Damit man z.B. calculate() oder updateRiskLevelMapping() auch im
- * Browser (via Window-Scope) aufrufen kann.
+ * EXTERNAL EXPORTS FOR HTML
+ * -------------------------
+ * So that, for example, calculate() or updateRiskLevelMapping() can also
+ * be called in the browser (via the Window scope).
  */
 window.calculate = calculate;
 window.updateRiskLevelMapping = updateRiskLevelMapping;
@@ -212,8 +211,8 @@ window.updateRiskLevelMapping = updateRiskLevelMapping;
 /**
  * LOADVECTORS()
  * -------------
- * Lädt einen Vektor aus dem String wie "(sl:1/m:2/...)" und schreibt
- * ihn in die 16 Eingabefelder. Anschließend ruft es calculate() auf.
+ * Loads a vector from a string like "(sl:1/m:2/...)" and writes it
+ * to the 16 input fields. Then calls calculate().
  */
 export function loadVectors(vector) {
   vector = vector.replace("(", "").replace(")", "");
@@ -235,8 +234,8 @@ export function loadVectors(vector) {
 /**
  * CALCULATE()
  * -----------
- * Hauptberechnung: Prüft, ob URL-Logik => parseUrlParameters + performAdvancedCalculation
- * oder ob wir unsere Fallback-Konfiguration verwenden.
+ * Main calculation: Checks whether URL logic => parseUrlParameters + performAdvancedCalculation
+ * or whether we use our fallback configuration.
  */
 export function calculate() {
   if (shouldUseUrlLogic()) {
@@ -245,7 +244,7 @@ export function calculate() {
     if (!parseOk) {
       console.warn("[WARN] parseUrlParameters failed => fallback to default logic.");
     } else {
-      // => URL-Logik erfolgreich
+      // => URL logic successful
       addUrlConfigurationOption();
       const advResult = performAdvancedCalculation();
       if (advResult) {
@@ -259,7 +258,7 @@ export function calculate() {
     }
   }
 
-  // Fallback (keine URL-Logik)
+  // Fallback (no URL logic)
   const configSelect = document.getElementById("configurationSelect");
   const selectedConfig = configSelect ? configSelect.value : "Default Configuration";
 
@@ -293,8 +292,8 @@ export function calculate() {
 /**
  * GETRISK()
  * ---------
- * Ermittelt das Risk-Level ('LOW','MEDIUM','HIGH' oder 'NOTE')
- * aus einem Zahlenwert und der gewählten Konfiguration
+ * Determines the risk level ('LOW','MEDIUM','HIGH', or 'NOTE')
+ * from a numeric value and the chosen configuration.
  */
 function getRisk(score, selectedConfig = "Default Configuration") {
   const numScore = parseFloat(score) || 0;
@@ -309,7 +308,7 @@ function getRisk(score, selectedConfig = "Default Configuration") {
 /**
  * GETRISKTHRESHOLDS()
  * -------------------
- * Gibt uns {LOW:[x,y], MEDIUM:[y,z], HIGH:[z,w]} je nach ausgewählter Konfiguration.
+ * Returns {LOW:[x,y], MEDIUM:[y,z], HIGH:[z,w]} depending on the selected configuration.
  */
 function getRiskThresholds(selectedConfigName) {
   return riskConfigurations[selectedConfigName] || riskConfigurations["Default Configuration"];
@@ -318,8 +317,8 @@ function getRiskThresholds(selectedConfigName) {
 /**
  * FILLUIFROMSTOREDVECTOR()
  * ------------------------
- * Schreibt die Werte aus storedVector in die 16 Felder (sl, m, o, ...).
- * Falls ein Key nicht existiert, wird 0 eingetragen.
+ * Writes the values from storedVector into the 16 fields (sl, m, o, ...).
+ * If a key does not exist, 0 is written.
  */
 function fillUIFromStoredVector() {
   partials.forEach(f => {
@@ -333,7 +332,7 @@ function fillUIFromStoredVector() {
 /**
  * VECTORTODATASET()
  * -----------------
- * Konvertiert storedVector in ein 16er-Array für das Radar-Chart.
+ * Converts storedVector into a 16-element array for the radar chart.
  */
 function vectorToDataset(vec) {
   const arr = [];
@@ -346,7 +345,7 @@ function vectorToDataset(vec) {
 /**
  * PUSHVALUESTODATASET()
  * ---------------------
- * Liest die Werte der gegebenen Factor-IDs aus der UI und pusht sie ins dataset.
+ * Reads the values of the given factor IDs from the UI and pushes them into the dataset.
  */
 function pushValuesToDataset(dataset, factors) {
   factors.forEach(factor => {
@@ -360,7 +359,7 @@ function pushValuesToDataset(dataset, factors) {
 /**
  * CALCULATEAVERAGE()
  * ------------------
- * Durchschnitt über die HTML-Eingabefelder, identifiziert via factors.
+ * Calculates the average of the HTML input fields identified by factors.
  */
 function calculateAverage(factors) {
   const values = getValues(factors);
@@ -371,7 +370,7 @@ function calculateAverage(factors) {
 /**
  * CALCULATEMAX()
  * --------------
- * Maximalen Wert über die HTML-Eingabefelder, identifiziert via factors.
+ * Calculates the maximum value of the HTML input fields identified by factors.
  */
 function calculateMax(factors) {
   const values = getValues(factors);
@@ -381,7 +380,7 @@ function calculateMax(factors) {
 /**
  * GETVALUES()
  * -----------
- * Liest die rohen Werte der HTML-Felder (factors) und gibt sie als Array zurück.
+ * Reads the raw values of the HTML fields (factors) and returns them as an array.
  */
 function getValues(factors) {
   return factors.map(factor => $(`#${factor}`).val());
@@ -390,8 +389,8 @@ function getValues(factors) {
 /**
  * UPDATEDISPLAY()
  * ---------------
- * Zeigt Wert + Level in einem DOM-Element (z.B. ".LS") an
- * und setzt passende CSS-Klasse (classLow, classMedium etc.).
+ * Displays the value + level in a DOM element (e.g. ".LS")
+ * and sets the appropriate CSS class (classLow, classMedium, etc.).
  */
 function updateDisplay(selector, value, riskLevel) {
   $(selector).text(`${value} ${riskLevel}`);
@@ -419,8 +418,8 @@ function updateDisplay(selector, value, riskLevel) {
 /**
  * GENERATESCORE()
  * ---------------
- * Erstellt einen String wie "SL:1/M:2/O:3/..."
- * aus den Eingabewerten der UI-Felder (threatAgent+technicalImpact).
+ * Generates a string like "SL:1/M:2/O:3/..." from the input values
+ * of the UI fields (threatAgent + technicalImpact).
  */
 function generateScore(threatAgentFactors, technicalImpactFactors) {
   const allFactors = [...threatAgentFactors, ...technicalImpactFactors];
@@ -432,7 +431,7 @@ function generateScore(threatAgentFactors, technicalImpactFactors) {
 /**
  * UPDATERISKLEVEL()
  * -----------------
- * Schreibt das finale Risiko in ".RS" + setzt CSS-Klasse (classLow etc.).
+ * Writes the final risk to ".RS" + sets a CSS class (classLow, etc.).
  */
 function updateRiskLevel(selector, riskLevel) {
   const classes = {
@@ -450,7 +449,7 @@ function updateRiskLevel(selector, riskLevel) {
 /**
  * DELETECLASS()
  * -------------
- * Bereinigt CSS-Klassen in LS, IS, RS vor einem neuen Update.
+ * Removes CSS classes in LS, IS, RS before a new update.
  */
 function deleteClass() {
   $(".LS").removeClass("classNote classLow classMedium classHigh");
@@ -461,7 +460,7 @@ function deleteClass() {
 /**
  * GETCRITICALITY()
  * ----------------
- * Gibt den finalen Overall-Risk basierend auf L- und I-Klasse zurück.
+ * Returns the final overall risk based on L and I class.
  */
 function getCriticality(L, I) {
   if (L === "LOW" && I === "LOW") return "NOTE";
@@ -475,7 +474,7 @@ function getCriticality(L, I) {
 /**
  * UPDATERISKCHART()
  * -----------------
- * Passt das Radar-Chart (riskChart) an. Färbt es je nach finalem Risiko (RS).
+ * Adjusts the radar chart (riskChart). Colors it based on the final risk (RS).
  */
 function updateRiskChart(dataset, RS) {
   if (!riskChart) return;
@@ -501,7 +500,7 @@ function updateRiskChart(dataset, RS) {
 /**
  * GETURLPARAMETER()
  * -----------------
- * Liefert den Wert eines URL-Parameters (z.B. "?vector=abc").
+ * Returns the value of a URL parameter (e.g., "?vector=abc").
  */
 function getUrlParameter(name) {
   name = name.replace(/[\[\]]/g, "\\$&");
@@ -513,8 +512,8 @@ function getUrlParameter(name) {
 /**
  * ADDURLCONFIGURATIONOPTION()
  * ---------------------------
- * Fügt dem Dropdown "URL Configuration" hinzu, wählt es aus und sperrt nur
- * das Dropdown (Eingabefelder bleiben frei).
+ * Adds "URL Configuration" to the dropdown, selects it, and disables only
+ * the dropdown (input fields remain free).
  */
 function addUrlConfigurationOption() {
   const configSelect = document.getElementById("configurationSelect");
@@ -529,14 +528,14 @@ function addUrlConfigurationOption() {
   }
 
   configSelect.value = "URL Configuration";
-  configSelect.disabled = true; // nur das Dropdown sperren
+  configSelect.disabled = true; // only disable the dropdown
 }
 
 /**
  * UPDATERISKLEVELMAPPING()
  * ------------------------
- * Ermittelt/aktualisiert das Risk-Level auf Basis von Scores und Config.
- * Kann im Testmodus nur returnen, sonst UI-Update.
+ * Determines/updates the risk level based on scores and config.
+ * Can only return in test mode, otherwise updates the UI.
  */
 export function updateRiskLevelMapping(
     testMode = false,
@@ -589,16 +588,16 @@ export function updateRiskLevelMapping(
 /**
  * SETUPOWASPFALLBACK()
  * --------------------
- * Falls wir NICHT im URL-Modus sind und der User "Configuration 2" o.ä. wählt,
- * wollen wir Likelihood und Impact identisch besetzen und das Standard-OWASP-
- * Mapping (3×3) anwenden.
+ * If we are NOT in URL mode and the user selects "Configuration 2" or similar,
+ * we want to populate Likelihood and Impact identically and apply the standard
+ * OWASP mapping (3×3).
  */
 function setupOwaspFallback(selectedConfig) {
   const ranges = riskConfigurations[selectedConfig]
       || riskConfigurations["Default Configuration"];
 
-  const likelihoodConfigObj = ranges; // identische Ranges
-  const impactConfigObj = ranges;     // identische Ranges
+  const likelihoodConfigObj = ranges; // same ranges
+  const impactConfigObj = ranges;     // same ranges
   const likelihoodLevels = ["LOW", "MEDIUM", "HIGH"];
   const impactLevels = ["LOW", "MEDIUM", "HIGH"];
   const mappingObj = owaspMapping;
@@ -609,7 +608,7 @@ function setupOwaspFallback(selectedConfig) {
 /**
  * BUILDHTMLRANGES()
  * -----------------
- * Baut eine kleine <table> mit den Range-Werten (minVal..maxVal).
+ * Builds a small <table> with the range values (minVal..maxVal).
  */
 function buildHtmlRanges(configObj, title) {
   const arr = [];
@@ -637,8 +636,8 @@ function buildHtmlRanges(configObj, title) {
 /**
  * BUILDHTMLMAPPINGTABLE()
  * -----------------------
- * Baut eine NxM-Tabelle basierend auf (likelihoodLevels × impactLevels)
- * und lookup in mappingObj (key=LIK-IMP).
+ * Builds an NxM table based on (likelihoodLevels × impactLevels)
+ * and looks up in mappingObj (key=LIK-IMP).
  */
 function buildHtmlMappingTable(lLevels, iLevels, mapObj) {
   let html = "<h5>Likelihood × Impact => Mapping</h5>";
@@ -666,9 +665,8 @@ function buildHtmlMappingTable(lLevels, iLevels, mapObj) {
 /**
  * SHOWDYNAMICRISKMODAL()
  * ----------------------
- * Wird aufgerufen, wenn man das Modal öffnen möchte
- * ("How is Severity Risk calculated?"). Stellt entweder
- * URL-Konfiguration (NxM) dar oder fallback via setupOwaspFallback.
+ * Called when you want to open the modal ("How is Severity Risk calculated?").
+ * Either displays the URL configuration (NxM) or falls back via setupOwaspFallback.
  */
 window.showDynamicRiskModal = function() {
   import("./url_logic.js").then(module => {
@@ -678,12 +676,12 @@ window.showDynamicRiskModal = function() {
     let impLvls   = module.impactLevels;
     let mapObj    = module.mappingObj;
 
-    // Prüfen, ob die URL-Logik-Werte (likeObj,impObj,mapping) überhaupt gefüllt sind:
+    // Check whether the URL-logic values (likeObj, impObj, mapping) are actually populated:
     const noValid = !likeObj || !Object.keys(likeObj).length
         || !impObj || !Object.keys(impObj).length
         || !mapObj || !Object.keys(mapObj).length;
 
-    // Falls leer => fallback => setupOwaspFallback
+    // If empty => fallback => setupOwaspFallback
     if (noValid) {
       const selConf = document.getElementById("configurationSelect")?.value || "Default Configuration";
       const fb = setupOwaspFallback(selConf);

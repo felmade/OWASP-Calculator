@@ -1,157 +1,152 @@
-# OWASP Risk Assessment Calculator – URL-Logik
+# OWASP Risk Assessment Calculator – URL Logic
 
-Dieses Dokument beschreibt die URL-Logik, mit der sich unser OWASP Risk Assessment Calculator konfigurieren lässt.
+This document describes the URL logic for configuring our OWASP Risk Assessment Calculator.
 
-1. **Likelihood-Konfiguration** (`likelihoodConfig`)
-2. **Impact-Konfiguration** (`impactConfig`)
+1. **Likelihood Configuration** (`likelihoodConfig`)
+2. **Impact Configuration** (`impactConfig`)
 3. **Mapping** (`mapping`)
 4. **Vector** (optional) (`vector`)
 
-Auf diese Weise können Sie **flexiblere** Riskomatrixen (n×m) erstellen und zugleich die Eingabewerte (16 Faktoren) vorgeben.
+Using this approach, you can create **more flexible** risk matrices (n×m) while predefining input values (16 factors).
 
 ---
 
-## Aufbau & Struktur der Parameter
+## Structure & Parameter Format
 
-### 1) Likelihood-Konfiguration: `likelihoodConfig`
+### 1) Likelihood Configuration: `likelihoodConfig`
 - Format: `LEVEL:MIN-MAX;LEVEL2:MIN2-MAX2;...`
-- Beispiel (3-Level): likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9
+- Example (3-level): `likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9`
 
-- **LOW**: 0 ≤ Wert < 3  
-- **MEDIUM**: 3 ≤ Wert < 6  
-- **HIGH**: 6 ≤ Wert ≤ 9  
+- **LOW**: 0 ≤ value < 3
+- **MEDIUM**: 3 ≤ value < 6
+- **HIGH**: 6 ≤ value ≤ 9
 
-Sie können beliebig viele Level definieren; zum Beispiel für eine 5-stufige Skala:
-likelihoodConfig=LOW:0-2;MEDIUM:2-4;HIGH:4-6;VERY_HIGH:6-8;EXTREME:8-9
+You can define as many levels as needed; for example, a 5-level scale:  
+`likelihoodConfig=LOW:0-2;MEDIUM:2-4;HIGH:4-6;VERY_HIGH:6-8;EXTREME:8-9`
 
-**Hinweis:** Bitte achten Sie auf korrekte Schreibweise (keine Leerzeichen außer um `:` oder `-`):
+**Note:** Ensure correct formatting (no spaces except around `:` or `-`):
 
+### 2) Impact Configuration: `impactConfig`
+- Format identical to `likelihoodConfig`
+- Example (also 3-level): `impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9`
 
-### 2) Impact-Konfiguration: `impactConfig`
-- Format identisch zu `likelihoodConfig`
-- Beispiel (ebenso 3-Level): impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9
-
-- **NOTE**: 0 ≤ Wert < 3  
-- **LOW**: 3 ≤ Wert < 6  
-- **HIGH**: 6 ≤ Wert ≤ 9  
+- **NOTE**: 0 ≤ value < 3
+- **LOW**: 3 ≤ value < 6
+- **HIGH**: 6 ≤ value ≤ 9
 
 ### 3) Mapping: `mapping`
-- Beschreibt die **Matrix** (n×m) aus den definierten Likelihood- und Impact-Levels.
-- Die Anzahl der Einträge muss **genau** `n×m` sein.
-- **n**: Anzahl definierter Likelihood-Level
-- **m**: Anzahl definierter Impact-Level
-- Format: Kommagetrennte Liste (`,`) in der **exakten Reihenfolge** der Zeilen.
+- Describes the **matrix** (n×m) derived from the defined likelihood and impact levels.
+- The number of entries must **exactly** equal `n×m`.
+- **n**: Number of defined likelihood levels
+- **m**: Number of defined impact levels
+- Format: Comma-separated list (`,`) in the **exact order** of the rows.
 
-Beispiel:  
-- Likelihood-Level = `[LOW, MEDIUM, HIGH]` (also 3 Stück)  
-- Impact-Level = `[NOTE, LOW, HIGH]` (also 3 Stück)  
-- => 3×3 = 9 Einträge: mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9
+Example:
+- Likelihood levels = `[LOW, MEDIUM, HIGH]` (3 levels)
+- Impact levels = `[NOTE, LOW, HIGH]` (3 levels)
+- => 3×3 = 9 entries: `mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9`
 
-Die Zuordnung lautet hierbei (in pseudocode, Zeile für Likelihood, Spalte für Impact):
+The mapping is structured as follows (pseudocode, rows = likelihood, columns = impact):
 
-|     | NOTE | LOW  | HIGH |
-|-----|------|------|------|
-| LOW    | Val1 | Val2 | Val3 |
-| MEDIUM | Val4 | Val5 | Val6 |
-| HIGH   | Val7 | Val8 | Val9 |
+|          | NOTE | LOW  | HIGH |
+|----------|------|------|------|
+| LOW      | Val1 | Val2 | Val3 |
+| MEDIUM   | Val4 | Val5 | Val6 |
+| HIGH     | Val7 | Val8 | Val9 |
 
-**Achtung**: Die Reihenfolge der Einträge in `mapping` **muss** exakt zu den sortierten Levels passen, die das Skript verwendet (siehe unten: Sortierung nach `minVal`).
+**Important:** The order of entries in `mapping` **must** match the sorted levels used by the script (see below: sorted by `minVal`).
 
 ### 4) Vector: `vector` (optional)
-- Legt die **16 Eingabefaktoren** fest, z. B. `(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:8/lc:9/li:10/lav:11/lac:12/fd:13/rd:14/nc:15/pv:16)`.
-- Format: (key:val/key:val/key:val/...)
+- Defines the **16 input factors**, e.g., `(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:8/lc:9/li:10/lav:11/lac:12/fd:13/rd:14/nc:15/pv:16)`.
+- Format: `(key:val/key:val/key:val/...)`
 
-- **key** muss einer der 16 bekannten Faktoren sein (`sl, m, o, s, ed, ee, a, id, lc, li, lav, lac, fd, rd, nc, pv`).
-- **val** ist eine Zahl 0..9.
-- Beachten Sie Groß-/Kleinschreibung: das Skript erwartet kleingeschriebene Keys oder es wandelt sie evtl. entsprechend um.
-- Bei falschen Keys oder Werten > 9 gibt es eine **Fehlermeldung**.
+- **key** must be one of the 16 known factors (`sl, m, o, s, ed, ee, a, id, lc, li, lav, lac, fd, rd, nc, pv`).
+- **val** is a number between 0 and 9.
+- Pay attention to case sensitivity: the script expects lowercase keys or may convert them automatically.
+- Invalid keys or values > 9 will result in an **error**.
 
 ---
 
-## Vollständiges URL-Beispiel
+## Full URL Example
 
-Angenommen, Sie möchten:
-- 3-Likelihood-Level: `LOW, MEDIUM, HIGH`
-- 3-Impact-Level: `NOTE, LOW, HIGH`
-- 9 Einträge im Mapping
-- Vordefinierte Faktoren
+Suppose you want:
+- 3 likelihood levels: `LOW, MEDIUM, HIGH`
+- 3 impact levels: `NOTE, LOW, HIGH`
+- 9 entries in the mapping
+- Predefined factors
 
-Dann könnte Ihr URL-Aufruf so aussehen: ?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9 &vector=(sl:1/m:1/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)
-
+Your URL might look like this:  
+`?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9&vector=(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)`
 
 1. **likelihoodConfig** = `LOW:0-3;MEDIUM:3-6;HIGH:6-9`
 2. **impactConfig** = `NOTE:0-3;LOW:3-6;HIGH:6-9`
 3. **mapping** = `Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9`
-   - **n=3** (LOW, MEDIUM, HIGH)  
-   - **m=3** (NOTE, LOW, HIGH)  
-   - => 3×3 = 9 Werte
+    - **n=3** (LOW, MEDIUM, HIGH)
+    - **m=3** (NOTE, LOW, HIGH)
+    - => 3×3 = 9 values
 4. **vector** = `(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)`
 
-### Ablauf im Skript
+### Script Workflow
 
-1. Das Skript **parsed** `likelihoodConfig` und baut ein Objekt, z. B. `{LOW:[0,3],MEDIUM:[3,6],HIGH:[6,9]}`.
-2. Das Skript **parsed** `impactConfig` und baut ebenfalls ein Objekt, z. B. `{NOTE:[0,3],LOW:[3,6],HIGH:[6,9]}`.
-3. **Mapping** wird zu einer Matrix gemapped:  
-   - `LOW-NOTE` => Val1  
-   - `LOW-LOW` => Val2  
-   - `LOW-HIGH` => Val3  
-   - `MEDIUM-NOTE` => Val4  
-   - ...  
-   - `HIGH-HIGH` => Val9
-4. Falls `vector` vorhanden ist, wird es ausgewertet und die Eingabefelder (z. B. `sl`, `m`, `o`) werden direkt befüllt.
-5. Daraus werden:
-   - **LS** (Durchschnitt)  
-   - **IS** (Maximum)
-6. **Likelihood-Klasse** (z. B. LOW) und **Impact-Klasse** (z. B. HIGH) werden bestimmt, woraus sich per `mappingObj` das finale Risiko (z. B. Val3) ergibt.
-
----
-
-## Fehlerfälle
-
-- **Fehlende Parameter**  
-  Wenn `likelihoodConfig`, `impactConfig` oder `mapping` fehlt, zeigt das Skript eine **Warnung** an und fällt ggf. auf eine Standardkonfiguration zurück.
-- **Falsches Format**  
-  - Bei `likelihoodConfig=LOW:0-ABC;HIGH:2-9` wird `ABC` als ungültig erkannt => Fehlermeldung.  
-  - Bei `mapping` mit zu wenig oder zu vielen Einträgen => Fehlermeldung.
-- **Unbekannte Keys** im `vector` => Wird ignoriert oder es erfolgt eine Warnung in der Konsole.
-- **Werte > 9** im `vector` => Error.
+1. The script **parses** `likelihoodConfig` to build an object, e.g., `{LOW:[0,3],MEDIUM:[3,6],HIGH:[6,9]}`.
+2. It **parses** `impactConfig` to build another object, e.g., `{NOTE:[0,3],LOW:[3,6],HIGH:[6,9]}`.
+3. **Mapping** is converted into a matrix:
+    - `LOW-NOTE` => Val1
+    - `LOW-LOW` => Val2
+    - `LOW-HIGH` => Val3
+    - `MEDIUM-NOTE` => Val4
+    - ...
+    - `HIGH-HIGH` => Val9
+4. If `vector` is present, it is processed, and input fields (e.g., `sl`, `m`, `o`) are directly populated.
+5. This generates:
+    - **LS** (average)
+    - **IS** (maximum)
+6. **Likelihood class** (e.g., LOW) and **impact class** (e.g., HIGH) are determined, and the final risk (e.g., Val3) is derived using `mappingObj`.
 
 ---
 
-## Weitere Beispiele
+## Error Cases
 
-### A) 2×2 Matrix 
-?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4&vector=(sl:1/m:1/o:0/s:5/ed:1/ee:1/a:3/id:2/lc:4/li:0/lav:0/lac:1/fd:2/rd:2/nc:0/pv:0)
-
-- Likelihood-Level: `LOW, HIGH`  
-- Impact-Level: `MINOR, MAJOR`  
-- mapping =>  
-  - LOW-MINOR => Val1  
-  - LOW-MAJOR => Val2  
-  - HIGH-MINOR => Val3  
-  - HIGH-MAJOR => Val4  
-
-### B) 4×3 Matrix  
-?likelihoodConfig=L0:0-2;L1:2-4;L2:4-6;L3:6-9 &impactConfig=I0:0-3;I1:3-6;I2:6-9&mapping=U1,U2,U3,U4,U5,U6,U7,U8,U9,U10,U11,U12&vector=(sl:0/m:1/o:0/s:9/ed:1/ee:5/a:1/id:1/lc:3/li:5/lav:2/lac:8/fd:3/rd:2/nc:0/pv:0)
-
-- Likelihood = 4 Level (`L0, L1, L2, L3`)
-- Impact = 3 Level (`I0, I1, I2`)
-- => 4×3 = 12 Einträge in `mapping`
-- Der Rest analog.
+- **Missing Parameters**  
+  If `likelihoodConfig`, `impactConfig`, or `mapping` is missing, the script displays a **warning** and may fall back to a default configuration.
+- **Invalid Format**
+    - For `likelihoodConfig=LOW:0-ABC;HIGH:2-9`, `ABC` is identified as invalid => Error.
+    - For `mapping` with too few or too many entries => Error.
+- **Unknown Keys** in `vector` => Ignored or logged as a console warning.
+- **Values > 9** in `vector` => Error.
 
 ---
 
-## Zusammenfassung
+## Additional Examples
 
-1. Verwenden Sie **vier** Parameter: `likelihoodConfig`, `impactConfig`, `mapping`, `vector`.
-2. *Alle* sind Pflicht (außer `vector`, das optional ist).  
-3. Je nach Größe (Anzahl Level) von `likelihoodConfig` und `impactConfig` wird die **Anzahl** der benötigten Einträge in `mapping` bestimmt (`n × m`).
-4. `vector` darf beliebig weggelassen werden. Dann bleiben die Eingabefelder leer bzw. Standard `0`.
-5. Das Skript erstellt die **Berechnung** (LS & IS) und das **finale Risiko** mithilfe der `mapping`-Matrix.  
-6. **Radar-Chart** und **Ausgabetexte** werden automatisch aktualisiert.
+### A) 2×2 Matrix
+`?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4&vector=(sl:1/m:1/o:0/s:5/ed:1/ee:1/a:3/id:2/lc:4/li:0/lav:0/lac:1/fd:2/rd:2/nc:0/pv:0)`
 
-Mit dieser **URL-Logik** können Sie komplexe n×m-Matrizen definieren und dazu passende Vektoren (16 Faktoren) direkt einbinden.
+- Likelihood levels: `LOW, HIGH`
+- Impact levels: `MINOR, MAJOR`
+- Mapping =>
+    - LOW-MINOR => Val1
+    - LOW-MAJOR => Val2
+    - HIGH-MINOR => Val3
+    - HIGH-MAJOR => Val4
 
+### B) 4×3 Matrix
+`?likelihoodConfig=L0:0-2;L1:2-4;L2:4-6;L3:6-9&impactConfig=I0:0-3;I1:3-6;I2:6-9&mapping=U1,U2,U3,U4,U5,U6,U7,U8,U9,U10,U11,U12&vector=(sl:1/m:1/o:0/s:9/ed:1/ee:5/a:1/id:1/lc:3/li:5/lav:2/lac:8/fd:3/rd:2/nc:0/pv:0)`
 
+- Likelihood = 4 levels (`L0, L1, L2, L3`)
+- Impact = 3 levels (`I0, I1, I2`)
+- => 4×3 = 12 entries in `mapping`
+- The rest is analogous.
 
+---
 
+## Summary
+
+1. Use **four parameters**: `likelihoodConfig`, `impactConfig`, `mapping`, `vector`.
+2. *All* are mandatory (except `vector`, which is optional).
+3. The **size** (number of levels) of `likelihoodConfig` and `impactConfig` determines the **number** of required `mapping` entries (`n × m`).
+4. `vector` can be omitted. In this case, input fields remain default to the lowest configuration possible.
+5. The script calculates **LS & IS** and derives the **final risk** using the `mapping` matrix.
+6. **Radar charts** and **output texts** are updated automatically.
+
+With this **URL logic**, you can define complex n×m matrices and embed corresponding vectors (16 factors) directly.

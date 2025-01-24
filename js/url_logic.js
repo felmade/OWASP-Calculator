@@ -5,11 +5,11 @@
  * ========== INTERNAL STORAGE ==========
  * =====================================
  *
- * Hier liegen die geparsten Daten:
+ * This is where the parsed data is stored:
  * - likelihoodConfigObj, impactConfigObj, ...
  * - storedVector: { sl: number, m: number, ...} (optional)
- *   => Dieser wird bei jeder Berechnung aktualisiert,
- *      damit neue UI-Eingaben in die Calculation einfließen.
+ *   => This is updated with each calculation
+ *      so that new UI inputs flow into the calculation.
  */
 
 export let likelihoodConfigObj = {};
@@ -20,7 +20,7 @@ export let mappingObj = {};
 export let storedVector = {};
 
 /**
- * 16 Felder, die im Vector erlaubt sind.
+ * 16 fields allowed in the vector.
  */
 const ALLOWED_VECTOR_KEYS = new Set([
     "sl", "m", "o", "s", "ed", "ee", "a", "id",
@@ -28,9 +28,9 @@ const ALLOWED_VECTOR_KEYS = new Set([
 ]);
 
 /**
- * Liste aller UI-Faktor-IDs,
- * um bei jedem Calculation-Aufruf
- * den storedVector mit dem UI zu synchronisieren.
+ * List of all UI factor IDs,
+ * so that on each calculation call
+ * the storedVector can be synchronized with the UI.
  */
 const PARTIALS = [
     "sl","m","o","s","ed","ee","a","id",
@@ -41,7 +41,7 @@ const PARTIALS = [
  * =====================================
  * ============= STEP 1 ================
  * =====================================
- * Prüfen, ob "URL Logic" genutzt wird.
+ * Check whether "URL Logic" is used.
  * => checkRequiredParameters()
  */
 export function shouldUseUrlLogic() {
@@ -52,14 +52,14 @@ export function shouldUseUrlLogic() {
  * =====================================
  * ============= STEP 2 ================
  * =====================================
- * Parse URL-Parameter:
+ * Parse URL parameters:
  * - likelihoodConfig
  * - impactConfig
  * - mapping
  * - vector (optional)
  *
- * Falls OK => Variablen befüllen, return true.
- * Falls Error => fallback => return false.
+ * If OK => fill variables, return true.
+ * If Error => fallback => return false.
  */
 export function parseUrlParameters() {
     try {
@@ -72,7 +72,7 @@ export function parseUrlParameters() {
         likelihoodConfigObj = parseConfiguration(likelihoodConfigStr);
         impactConfigObj     = parseConfiguration(impactConfigStr);
 
-        // 2) Level-Arrays erzeugen (sortiert nach minVal)
+        // 2) Create level arrays (sorted by minVal)
         likelihoodLevels = configObjToSortedLevels(likelihoodConfigObj);
         impactLevels     = configObjToSortedLevels(impactConfigObj);
 
@@ -109,15 +109,15 @@ export function parseUrlParameters() {
  * =====================================
  * Advanced Calculation:
  * 1) syncStoredVectorFromUI()
- * 2) L&I (Scores) berechnen
+ * 2) Calculate L & I (Scores)
  * 3) Mapping => finalRisk
- * 4) UI-Update (LS, IS, RS)
+ * 4) UI update (LS, IS, RS)
  */
 export function performAdvancedCalculation() {
     // (0) UI -> storedVector
     syncStoredVectorFromUI();
 
-    // Prüfen, ob wir Config + Mapping haben
+    // Check if we have config + mapping
     if (!Object.keys(likelihoodConfigObj).length || !Object.keys(impactConfigObj).length) {
         console.error("No config objects found - can't proceed.");
         return null;
@@ -127,30 +127,30 @@ export function performAdvancedCalculation() {
         return null;
     }
 
-    // 1) L_score, I_score aus storedVector
+    // 1) L_score, I_score from storedVector
     let L_score = 0;
     let I_score = 0;
 
     if (storedVector) {
-        // Threat-Felder => average
+        // Threat fields => average
         const threatKeys = ["sl","m","o","s","ed","ee","a","id"];
         L_score = averageVector(storedVector, threatKeys);
 
-        // Impact-Felder => max
+        // Impact fields => max
         const impactKeys = ["lc","li","lav","lac","fd","rd","nc","pv"];
         I_score = maxVector(storedVector, impactKeys);
     } else {
         console.warn("[performAdvancedCalculation] No vector => using 0 for L&I");
     }
 
-    // 2) L_class, I_class ermitteln
+    // 2) Determine L_class, I_class
     const L_class = getRangeClass(L_score, likelihoodConfigObj);
     const I_class = getRangeClass(I_score, impactConfigObj);
 
     // 3) Mapping => finalRisk
     const finalRisk = getMappedRisk(L_class, I_class);
 
-    // 4) UI-Update (LS,IS,RS)
+    // 4) UI update (LS,IS,RS)
     const LSElem = document.querySelector('.LS');
     if (LSElem) {
         LSElem.textContent = `${L_score.toFixed(3)} ${L_class}`;
@@ -183,9 +183,9 @@ export function performAdvancedCalculation() {
 }
 
 /**
- * Liest die 16 Input-Felder (#sl, #m, #o, #s, ...)
- * und aktualisiert storedVector entsprechend,
- * damit du geänderte Werte in der Berechnung nutzt.
+ * Reads the 16 input fields (#sl, #m, #o, #s, ...)
+ * and updates storedVector accordingly,
+ * so that any changed values are used in the calculation.
  */
 function syncStoredVectorFromUI() {
     PARTIALS.forEach(key => {
@@ -231,8 +231,8 @@ function parseConfiguration(str) {
 }
 
 /**
- * Konvertiert z. B. { LOW:[0,2], MEDIUM:[2,4], HIGH:[4,6] }
- * in ein Array ["LOW","MEDIUM","HIGH"] (sortiert nach minVal).
+ * Converts e.g. { LOW:[0,2], MEDIUM:[2,4], HIGH:[4,6] }
+ * into an array ["LOW","MEDIUM","HIGH"] (sorted by minVal).
  */
 function configObjToSortedLevels(configObj) {
     const tempArr = [];
@@ -273,7 +273,7 @@ function parseNxMMapping(lLevels, iLevels, shortStr) {
 
 /**
  * parseVector("(sl:1/m:2/o:3/...)")
- * => { sl:1, m:2, o:3, ... } (nur die 16 ALLOWED_VECTOR_KEYS)
+ * => { sl:1, m:2, o:3, ... } (only the 16 ALLOWED_VECTOR_KEYS)
  */
 function parseVector(str) {
     const clean = str.replace(/^\(/,'').replace(/\)$/,'');
@@ -311,15 +311,15 @@ function parseVector(str) {
 }
 
 /**
- * Ermittelt das Level (z. B. "LOW"), indem wir
- * in configObj[level] = [min,max] nachschauen.
+ * Determines the level (e.g. "LOW") by looking up
+ * in configObj[level] = [min,max].
  */
 export function getRangeClass(value, configObj) {
     for (const level in configObj) {
         const [minVal, maxVal] = configObj[level];
 
-        // Normalfall: [minVal, maxVal) => >= minVal && < maxVal
-        // Zusätzlicher Hack: EXACT 9 => maxVal===9 => zuordnen
+        // Normal case: [minVal, maxVal) => >= minVal && < maxVal
+        // Additional hack: EXACT 9 => maxVal===9 => assign
         if (
             (value >= minVal && value < maxVal) ||
             (value === 9 && maxVal === 9)
@@ -343,9 +343,9 @@ export function getMappedRisk(L_class, I_class) {
 
 /**
  * checkRequiredParameters():
- * => wenn ?likelihoodConfig=..., ?impactConfig=..., ?mapping=...
- *    alles da => true
- * => sonst => fallback => false
+ * => if ?likelihoodConfig=..., ?impactConfig=..., ?mapping=...
+ *    all present => true
+ * => otherwise => fallback => false
  */
 function checkRequiredParameters() {
     const requiredParams = ['likelihoodConfig', 'impactConfig', 'mapping'];
@@ -362,12 +362,12 @@ function checkRequiredParameters() {
         }
     });
 
-    // Keine Parameter => fallback
+    // No parameters => fallback
     if (foundParams === 0) {
         return false;
     }
 
-    // 1 oder 2 fehlen => Warnung
+    // 1 or 2 missing => warning
     if (missingParams.length > 0 && missingParams.length < requiredParams.length) {
         swal({
             title: "Missing Parameters",
@@ -382,7 +382,7 @@ function checkRequiredParameters() {
 }
 
 /**
- * Average über gegebene Keys (z. B. threatKeys) in storedVector
+ * Average over given keys (e.g. threatKeys) in storedVector
  */
 export function averageVector(vec, keys) {
     let sum = 0, count = 0;
@@ -397,7 +397,7 @@ export function averageVector(vec, keys) {
 }
 
 /**
- * Max über gegebene Keys (z. B. impactKeys) in storedVector
+ * Max over given keys (e.g. impactKeys) in storedVector
  */
 export function maxVector(vec, keys) {
     let maxVal = Number.NEGATIVE_INFINITY;
@@ -412,7 +412,7 @@ export function maxVector(vec, keys) {
 }
 
 /**
- * URL-Parameter extrahieren
+ * Extract URL parameter
  */
 export function getUrlParameter(name) {
     name = name.replace(/[\[\]]/g, "\\$&");
@@ -424,7 +424,7 @@ export function getUrlParameter(name) {
 }
 
 /**
- * Getter-Funktionen, falls du sie extern benötigst
+ * Getter functions, in case you need them externally
  */
 export function getStoredConfiguration() {
     return {
