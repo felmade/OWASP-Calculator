@@ -14,9 +14,10 @@ import {
   parseUrlParameters,
   performAdvancedCalculation,
   shouldUseUrlLogic,
-  // Exported global variable (read-only) from url_logic
   storedVector
 } from "./url_logic.js";
+
+import { config } from '../config.js';
 
 /**
  * CANVAS / CHART.JS
@@ -250,6 +251,16 @@ export function calculate() {
       if (advResult) {
         console.log("[INFO] Calculation done via URL logic", advResult);
         fillUIFromStoredVector();
+
+        // Disable elements if configured
+        if (config.uiSettings.disableElements) {
+          partials.forEach((factor) => {
+            const elem = document.getElementById(factor);
+            if (elem) {
+              elem.disabled = true;
+            }
+          });
+        }
 
         const dataset = vectorToDataset(storedVector);
         updateRiskChart(dataset, advResult.finalRisk);
@@ -515,7 +526,7 @@ function getUrlParameter(name) {
  * Adds "URL Configuration" to the dropdown, selects it, and disables only
  * the dropdown (input fields remain free).
  */
-function addUrlConfigurationOption() {
+export function addUrlConfigurationOption() {
   const configSelect = document.getElementById("configurationSelect");
   if (!configSelect) return;
 
@@ -528,7 +539,10 @@ function addUrlConfigurationOption() {
   }
 
   configSelect.value = "URL Configuration";
-  configSelect.disabled = true; // only disable the dropdown
+  // Disable the dropdown if configured
+  if (config.uiSettings.disableDropdown) {
+    configSelect.disabled = true;
+  }
 }
 
 /**

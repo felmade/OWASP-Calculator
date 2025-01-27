@@ -6,6 +6,8 @@ import {
     riskConfigurations,
     updateRiskLevelMapping,
     loadVectors,
+    calculate,
+    addUrlConfigurationOption
 } from '../js/script.js';
 
 import {
@@ -20,6 +22,8 @@ import {
     mappingObj,
     storedVector
 } from '../js/url_logic.js';
+
+import {config} from '../config.js';
 
 /**
  * --------------------------------------
@@ -69,99 +73,99 @@ describe('updateRiskLevelMapping() with testMode enabled', () => {
         // --- Default Configuration ---
         {
             config: 'Default Configuration',
-            inputs: { L_score: 2, I_score: 2 },
-            expected: { L_class: 'LOW', I_class: 'LOW', RS: 'NOTE' },
+            inputs: {L_score: 2, I_score: 2},
+            expected: {L_class: 'LOW', I_class: 'LOW', RS: 'NOTE'},
         },
         {
             config: 'Default Configuration',
-            inputs: { L_score: 2, I_score: 4 },
-            expected: { L_class: 'LOW', I_class: 'MEDIUM', RS: 'LOW' },
+            inputs: {L_score: 2, I_score: 4},
+            expected: {L_class: 'LOW', I_class: 'MEDIUM', RS: 'LOW'},
         },
         {
             config: 'Default Configuration',
-            inputs: { L_score: 5, I_score: 5 },
-            expected: { L_class: 'MEDIUM', I_class: 'MEDIUM', RS: 'MEDIUM' },
+            inputs: {L_score: 5, I_score: 5},
+            expected: {L_class: 'MEDIUM', I_class: 'MEDIUM', RS: 'MEDIUM'},
         },
         {
             config: 'Default Configuration',
-            inputs: { L_score: 8, I_score: 8 },
-            expected: { L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL' },
+            inputs: {L_score: 8, I_score: 8},
+            expected: {L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL'},
         },
         {
             config: 'Default Configuration',
-            inputs: { L_score: 7, I_score: 5 },
-            expected: { L_class: 'HIGH', I_class: 'MEDIUM', RS: 'HIGH' },
+            inputs: {L_score: 7, I_score: 5},
+            expected: {L_class: 'HIGH', I_class: 'MEDIUM', RS: 'HIGH'},
         },
 
         // --- Configuration 1 ---
         {
             config: 'Configuration 1',
-            inputs: { L_score: 2, I_score: 2 },
-            expected: { L_class: 'LOW', I_class: 'LOW', RS: 'NOTE' },
+            inputs: {L_score: 2, I_score: 2},
+            expected: {L_class: 'LOW', I_class: 'LOW', RS: 'NOTE'},
         },
         {
             config: 'Configuration 1',
-            inputs: { L_score: 4.5, I_score: 2 },
-            expected: { L_class: 'LOW', I_class: 'LOW', RS: 'NOTE' },
+            inputs: {L_score: 4.5, I_score: 2},
+            expected: {L_class: 'LOW', I_class: 'LOW', RS: 'NOTE'},
         },
         {
             config: 'Configuration 1',
-            inputs: { L_score: 6, I_score: 6 },
-            expected: { L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL' },
+            inputs: {L_score: 6, I_score: 6},
+            expected: {L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL'},
         },
         {
             config: 'Configuration 1',
-            inputs: { L_score: 7.5, I_score: 5.5 },
-            expected: { L_class: 'HIGH', I_class: 'MEDIUM', RS: 'HIGH' },
+            inputs: {L_score: 7.5, I_score: 5.5},
+            expected: {L_class: 'HIGH', I_class: 'MEDIUM', RS: 'HIGH'},
         },
 
         // --- Configuration 2 ---
         {
             config: 'Configuration 2',
-            inputs: { L_score: 2, I_score: 2 },
-            expected: { L_class: 'LOW', I_class: 'LOW', RS: 'NOTE' },
+            inputs: {L_score: 2, I_score: 2},
+            expected: {L_class: 'LOW', I_class: 'LOW', RS: 'NOTE'},
         },
         {
             config: 'Configuration 2',
-            inputs: { L_score: 7, I_score: 7.5 },
-            expected: { L_class: 'LOW', I_class: 'MEDIUM', RS: 'LOW' },
+            inputs: {L_score: 7, I_score: 7.5},
+            expected: {L_class: 'LOW', I_class: 'MEDIUM', RS: 'LOW'},
         },
         {
             config: 'Configuration 2',
-            inputs: { L_score: 8.5, I_score: 9 },
-            expected: { L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL' },
+            inputs: {L_score: 8.5, I_score: 9},
+            expected: {L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL'},
         },
         {
             config: 'Configuration 2',
-            inputs: { L_score: 8.5, I_score: 7.5 },
-            expected: { L_class: 'HIGH', I_class: 'MEDIUM', RS: 'HIGH' },
+            inputs: {L_score: 8.5, I_score: 7.5},
+            expected: {L_class: 'HIGH', I_class: 'MEDIUM', RS: 'HIGH'},
         },
 
         // --- Configuration 3 ---
         {
             config: 'Configuration 3',
-            inputs: { L_score: 2, I_score: 2 },
-            expected: { L_class: 'LOW', I_class: 'LOW', RS: 'NOTE' },
+            inputs: {L_score: 2, I_score: 2},
+            expected: {L_class: 'LOW', I_class: 'LOW', RS: 'NOTE'},
         },
         {
             config: 'Configuration 3',
-            inputs: { L_score: 6, I_score: 7.5 },
-            expected: { L_class: 'LOW', I_class: 'HIGH', RS: 'MEDIUM' },
+            inputs: {L_score: 6, I_score: 7.5},
+            expected: {L_class: 'LOW', I_class: 'HIGH', RS: 'MEDIUM'},
         },
         {
             config: 'Configuration 3',
-            inputs: { L_score: 7.5, I_score: 8.5 },
-            expected: { L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL' },
+            inputs: {L_score: 7.5, I_score: 8.5},
+            expected: {L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL'},
         },
         {
             config: 'Configuration 3',
-            inputs: { L_score: 6.5, I_score: 6.5 },
-            expected: { L_class: 'MEDIUM', I_class: 'MEDIUM', RS: 'MEDIUM' },
+            inputs: {L_score: 6.5, I_score: 6.5},
+            expected: {L_class: 'MEDIUM', I_class: 'MEDIUM', RS: 'MEDIUM'},
         },
         {
             config: 'Configuration 3',
-            inputs: { L_score: 8, I_score: 7 },
-            expected: { L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL' },
+            inputs: {L_score: 8, I_score: 7},
+            expected: {L_class: 'HIGH', I_class: 'HIGH', RS: 'CRITICAL'},
         },
     ];
 
@@ -175,7 +179,7 @@ describe('updateRiskLevelMapping() with testMode enabled', () => {
     });
 
     // For each test case => call updateRiskLevelMapping(testMode=true, ...)
-    testCases.forEach(({ config, inputs, expected }, index) => {
+    testCases.forEach(({config, inputs, expected}, index) => {
         test(`Test Case ${index + 1} for ${config}`, () => {
             const result = updateRiskLevelMapping(
                 true, // Enable testMode
@@ -197,8 +201,8 @@ describe('loadVectors()', () => {
     beforeEach(() => {
         // Set up DOM: 16 input fields
         const partials = [
-            "sl","m","o","s","ed","ee","a","id",
-            "lc","li","lav","lac","fd","rd","nc","pv"
+            "sl", "m", "o", "s", "ed", "ee", "a", "id",
+            "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
         ];
         partials.forEach(id => {
             const input = document.createElement('input');
@@ -217,22 +221,22 @@ describe('loadVectors()', () => {
         {
             vector: '(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:8/lc:9/li:10/lav:11/lac:12/fd:13/rd:14/nc:15/pv:16)',
             expectedValues: {
-                sl: '1',  m: '2',  o: '3',  s: '4',  ed: '5',  ee: '6',
-                a: '7',   id: '8', lc: '9', li: '10', lav: '11', lac: '12',
+                sl: '1', m: '2', o: '3', s: '4', ed: '5', ee: '6',
+                a: '7', id: '8', lc: '9', li: '10', lav: '11', lac: '12',
                 fd: '13', rd: '14', nc: '15', pv: '16'
             },
         },
         {
             vector: '(sl:0/m:0/o:0/s:0/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)',
             expectedValues: {
-                sl: '0',  m: '0',  o: '0',  s: '0',  ed: '0',  ee: '0',
-                a: '0',   id: '0', lc: '0', li: '0', lav: '0', lac: '0',
-                fd: '0',  rd: '0', nc: '0', pv: '0'
+                sl: '0', m: '0', o: '0', s: '0', ed: '0', ee: '0',
+                a: '0', id: '0', lc: '0', li: '0', lav: '0', lac: '0',
+                fd: '0', rd: '0', nc: '0', pv: '0'
             },
         },
     ];
 
-    testCases.forEach(({ vector, expectedValues }, index) => {
+    testCases.forEach(({vector, expectedValues}, index) => {
         test(`Test Case ${index + 1}: Load vector and update input fields`, () => {
             loadVectors(vector);
 
@@ -267,8 +271,8 @@ describe('loadVectors()', () => {
 describe('loadVectors()', () => {
     beforeEach(() => {
         const partials = [
-            "sl","m","o","s","ed","ee","a","id",
-            "lc","li","lav","lac","fd","rd","nc","pv"
+            "sl", "m", "o", "s", "ed", "ee", "a", "id",
+            "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
         ];
         partials.forEach(id => {
             const input = document.createElement('input');
@@ -286,22 +290,22 @@ describe('loadVectors()', () => {
         {
             vector: '(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:8/lc:9/li:10/lav:11/lac:12/fd:13/rd:14/nc:15/pv:16)',
             expectedValues: {
-                sl: '1',  m: '2',  o: '3',  s: '4',  ed: '5',  ee: '6',
-                a: '7',   id: '8', lc: '9', li: '10', lav: '11', lac: '12',
+                sl: '1', m: '2', o: '3', s: '4', ed: '5', ee: '6',
+                a: '7', id: '8', lc: '9', li: '10', lav: '11', lac: '12',
                 fd: '13', rd: '14', nc: '15', pv: '16'
             },
         },
         {
             vector: '(sl:0/m:0/o:0/s:0/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)',
             expectedValues: {
-                sl: '0',  m: '0',  o: '0',  s: '0',  ed: '0',  ee: '0',
-                a: '0',   id: '0', lc: '0', li: '0', lav: '0', lac: '0',
-                fd: '0',  rd: '0', nc: '0', pv: '0'
+                sl: '0', m: '0', o: '0', s: '0', ed: '0', ee: '0',
+                a: '0', id: '0', lc: '0', li: '0', lav: '0', lac: '0',
+                fd: '0', rd: '0', nc: '0', pv: '0'
             },
         },
     ];
 
-    testCases.forEach(({ vector, expectedValues }, index) => {
+    testCases.forEach(({vector, expectedValues}, index) => {
         test(`Test Case ${index + 1}: Load vector and update input fields`, () => {
             loadVectors(vector);
             for (const [id, value] of Object.entries(expectedValues)) {
@@ -343,7 +347,7 @@ describe('shouldUseUrlLogic()', () => {
 
     test('No parameters => true => no alert', () => {
         delete window.location;
-        window.location = { search: '' };
+        window.location = {search: ''};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
         expect(global.swal).not.toHaveBeenCalled();
@@ -351,7 +355,7 @@ describe('shouldUseUrlLogic()', () => {
 
     test('All required => true => no alert', () => {
         delete window.location;
-        window.location = { search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple' };
+        window.location = {search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(true);
         expect(global.swal).not.toHaveBeenCalled();
@@ -359,7 +363,7 @@ describe('shouldUseUrlLogic()', () => {
 
     test('One param missing => false => alert', () => {
         delete window.location;
-        window.location = { search: '?likelihoodConfig=high&impactConfig=medium' };
+        window.location = {search: '?likelihoodConfig=high&impactConfig=medium'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
         expect(global.swal).toHaveBeenCalledWith({
@@ -372,7 +376,7 @@ describe('shouldUseUrlLogic()', () => {
 
     test('Two params missing => false => alert', () => {
         delete window.location;
-        window.location = { search: '?likelihoodConfig=high' };
+        window.location = {search: '?likelihoodConfig=high'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
         expect(global.swal).toHaveBeenCalledWith({
@@ -385,7 +389,7 @@ describe('shouldUseUrlLogic()', () => {
 
     test('Extra irrelevant params => no required => true => no alert', () => {
         delete window.location;
-        window.location = { search: '?extraParam=123&anotherParam=456' };
+        window.location = {search: '?extraParam=123&anotherParam=456'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
         expect(global.swal).not.toHaveBeenCalled();
@@ -393,7 +397,7 @@ describe('shouldUseUrlLogic()', () => {
 
     test('One required missing + optional => false => alert', () => {
         delete window.location;
-        window.location = { search: '?likelihoodConfig=high&vector=testVector' };
+        window.location = {search: '?likelihoodConfig=high&vector=testVector'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
         expect(global.swal).toHaveBeenCalledWith({
@@ -406,7 +410,7 @@ describe('shouldUseUrlLogic()', () => {
 
     test('All required + optional => true => no alert', () => {
         delete window.location;
-        window.location = { search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple&vector=testVector' };
+        window.location = {search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple&vector=testVector'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(true);
         expect(global.swal).not.toHaveBeenCalled();
@@ -421,7 +425,7 @@ describe('shouldUseUrlLogic()', () => {
         // Helper function: set window.location.search
         function setLocationSearch(searchString) {
             delete window.location;
-            window.location = { search: searchString };
+            window.location = {search: searchString};
         }
 
         beforeEach(() => {
@@ -758,23 +762,23 @@ describe('shouldUseUrlLogic()', () => {
 
             // Threat keys (8 fields) => average
             storedVector.sl = 1;
-            storedVector.m  = 3;
-            storedVector.o  = 5;
-            storedVector.s  = 0;
+            storedVector.m = 3;
+            storedVector.o = 5;
+            storedVector.s = 0;
             storedVector.ed = 0;
             storedVector.ee = 0;
-            storedVector.a  = 0;
+            storedVector.a = 0;
             storedVector.id = 0;
 
             // Impact keys (8 fields) => max
-            storedVector.lc  = 2;
-            storedVector.li  = 2;
+            storedVector.lc = 2;
+            storedVector.li = 2;
             storedVector.lav = 6;
             storedVector.lac = 1;
-            storedVector.fd  = 2;
-            storedVector.rd  = 2;
-            storedVector.nc  = 4;
-            storedVector.pv  = 3;
+            storedVector.fd = 2;
+            storedVector.rd = 2;
+            storedVector.nc = 4;
+            storedVector.pv = 3;
 
             // => L_score=1.125 => "LOW"; I_score=6 => "MAJOR"
             // => finalRisk="LOW-MAJOR"="RISKY"
@@ -795,19 +799,19 @@ describe('shouldUseUrlLogic()', () => {
 
             // => sl=16 => average=(16)/8=2 => "MEDIUM"
             storedVector.sl = 16;
-            storedVector.m  = 0;
-            storedVector.o  = 0;
-            storedVector.s  = 0;
+            storedVector.m = 0;
+            storedVector.o = 0;
+            storedVector.s = 0;
             storedVector.ed = 0;
             storedVector.ee = 0;
-            storedVector.a  = 0;
+            storedVector.a = 0;
             storedVector.id = 0;
 
             // Impact => 0 => "LOW"
             storedVector.lc = 0;
             storedVector.li = 0;
-            storedVector.lav= 0;
-            storedVector.lac= 0;
+            storedVector.lav = 0;
+            storedVector.lac = 0;
             storedVector.fd = 0;
             storedVector.rd = 0;
             storedVector.nc = 0;
@@ -825,15 +829,15 @@ describe('shouldUseUrlLogic()', () => {
             impactConfigObj['LOW'] = [0, 5];
             mappingObj['LOW-LOW'] = 'OK';
 
-            storedVector.sl=0;
-            storedVector.m=0;
-            storedVector.o=0;
-            storedVector.s=0;
-            storedVector.ed=0;
-            storedVector.ee=0;
-            storedVector.a=0;
-            storedVector.id=0; // => average=0 => "LOW"
-            storedVector.lc=-2; // max=-2 => => "ERROR"
+            storedVector.sl = 0;
+            storedVector.m = 0;
+            storedVector.o = 0;
+            storedVector.s = 0;
+            storedVector.ed = 0;
+            storedVector.ee = 0;
+            storedVector.a = 0;
+            storedVector.id = 0; // => average=0 => "LOW"
+            storedVector.lc = -2; // max=-2 => => "ERROR"
 
             const result = performAdvancedCalculation();
             expect(result).not.toBeNull();
@@ -849,24 +853,24 @@ describe('shouldUseUrlLogic()', () => {
             mappingObj['LOW-HIGH'] = 'TEST-RISK';
 
             // => Threat => sum=10 => average=10/8=1.25 => "LOW"
-            storedVector.sl=5;
-            storedVector.m=5;
-            storedVector.o=0;
-            storedVector.s=0;
-            storedVector.ed=0;
-            storedVector.ee=0;
-            storedVector.a=0;
-            storedVector.id=0;
+            storedVector.sl = 5;
+            storedVector.m = 5;
+            storedVector.o = 0;
+            storedVector.s = 0;
+            storedVector.ed = 0;
+            storedVector.ee = 0;
+            storedVector.a = 0;
+            storedVector.id = 0;
 
             // => Impact => max=9 => => "HIGH"
-            storedVector.lc=9;
-            storedVector.li=0;
-            storedVector.lav=0;
-            storedVector.lac=0;
-            storedVector.fd=0;
-            storedVector.rd=0;
-            storedVector.nc=0;
-            storedVector.pv=0;
+            storedVector.lc = 9;
+            storedVector.li = 0;
+            storedVector.lav = 0;
+            storedVector.lac = 0;
+            storedVector.fd = 0;
+            storedVector.rd = 0;
+            storedVector.nc = 0;
+            storedVector.pv = 0;
 
             // => finalRisk => "TEST-RISK"
             const r = performAdvancedCalculation();
@@ -884,7 +888,7 @@ describe('shouldUseUrlLogic()', () => {
             impactConfigObj['LOW'] = [0, 9];
             mappingObj['LOW-LOW'] = 'OK';
 
-            storedVector.sl=4;
+            storedVector.sl = 4;
             const out = performAdvancedCalculation();
             expect(out).not.toBeNull();
             // No .LS/.IS => no crash
@@ -899,7 +903,7 @@ describe('shouldUseUrlLogic()', () => {
             mappingObj['ERROR-HIGH'] = 'IMPOSSIBLE';
 
             // L=7 => average=7 => "ERROR"
-            storedVector.sl=7*8; // sum=56 => 56/8=7
+            storedVector.sl = 7 * 8; // sum=56 => 56/8=7
             // I=0 => => "HIGH" => => finalRisk => "ERROR"
             // (mappingObj['ERROR-HIGH']="IMPOSSIBLE"? => but we check if "ERROR" is blocked)
             mappingObj['ERROR-HIGH'] = 'IMPOSSIBLE';
@@ -911,15 +915,15 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 10 ==============
         test('10) L_class=ANY, I_class=ERROR => finalRisk="ERROR"', () => {
-            likelihoodConfigObj['LOW']=[0,9];
-            impactConfigObj['MEDIUM']=[2,5];
-            impactConfigObj['HIGH']=[5,9];
+            likelihoodConfigObj['LOW'] = [0, 9];
+            impactConfigObj['MEDIUM'] = [2, 5];
+            impactConfigObj['HIGH'] = [5, 9];
             mappingObj['LOW-ERROR'] = 'WONT HAPPEN?';
 
-            storedVector.sl=0; // => average=0 => "LOW"
+            storedVector.sl = 0; // => average=0 => "LOW"
             // => Impact => max=1.5 => check [2,5),(5,9) => => none => "ERROR"
-            storedVector.lc=1.5;
-            storedVector.li=1.5;
+            storedVector.lc = 1.5;
+            storedVector.li = 1.5;
 
             const rez = performAdvancedCalculation();
             expect(rez.I_class).toBe('ERROR');
@@ -928,22 +932,22 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 11 ==============
         test('11) Rounded values => average=2.500 => "2.500 MID"', () => {
-            likelihoodConfigObj['MID']=[0,9];
-            impactConfigObj['MID']=[0,9];
-            mappingObj['MID-MID']='OK';
+            likelihoodConfigObj['MID'] = [0, 9];
+            impactConfigObj['MID'] = [0, 9];
+            mappingObj['MID-MID'] = 'OK';
 
             // sum=20, count=8 => average=2.5
-            storedVector.sl=10;
-            storedVector.m=10; // => sum=20
-            storedVector.o=0;
-            storedVector.s=0;
-            storedVector.ed=0;
-            storedVector.ee=0;
-            storedVector.a=0;
-            storedVector.id=0;
+            storedVector.sl = 10;
+            storedVector.m = 10; // => sum=20
+            storedVector.o = 0;
+            storedVector.s = 0;
+            storedVector.ed = 0;
+            storedVector.ee = 0;
+            storedVector.a = 0;
+            storedVector.id = 0;
 
             // Impact => let's say 4 => "MID"
-            storedVector.lc=4;
+            storedVector.lc = 4;
 
             const ret = performAdvancedCalculation();
             expect(ret.L_score).toBeCloseTo(2.5, 5);
@@ -952,25 +956,25 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 12 ==============
         test('12) MaxVector => negative+positive => max=3 => => I_class=LOW, L_class=? => final=ERROR', () => {
-            likelihoodConfigObj['LOW']=[0,5];
-            impactConfigObj['LOW']=[0,5];
-            mappingObj['LOW-LOW']='OK';
+            likelihoodConfigObj['LOW'] = [0, 5];
+            impactConfigObj['LOW'] = [0, 5];
+            mappingObj['LOW-LOW'] = 'OK';
 
             // Threat => sl=-5, m=-2 => average=? => ~ -0.875 => => "ERROR"
-            storedVector.sl=-5;
-            storedVector.m=-2;
-            storedVector.o=0;
-            storedVector.s=0;
-            storedVector.ed=0;
-            storedVector.ee=0;
-            storedVector.a=0;
-            storedVector.id=0;
+            storedVector.sl = -5;
+            storedVector.m = -2;
+            storedVector.o = 0;
+            storedVector.s = 0;
+            storedVector.ed = 0;
+            storedVector.ee = 0;
+            storedVector.a = 0;
+            storedVector.id = 0;
 
             // Impact => lc=-5, li=3 => max=3 => => "LOW"
-            storedVector.lc=-5;
-            storedVector.li=3;
-            storedVector.lav=2;
-            storedVector.lac=1;
+            storedVector.lc = -5;
+            storedVector.li = 3;
+            storedVector.lav = 2;
+            storedVector.lac = 1;
 
             const r = performAdvancedCalculation();
             expect(r.I_score).toBe(3);
@@ -981,12 +985,12 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 13 ==============
         test('13) "Edge" => L_score=5 => => not in [0,5) => => ERROR', () => {
-            likelihoodConfigObj['LOW'] = [0,5];
-            impactConfigObj['LOW'] = [0,9];
+            likelihoodConfigObj['LOW'] = [0, 5];
+            impactConfigObj['LOW'] = [0, 9];
             mappingObj['LOW-LOW'] = 'OK';
 
             // => average=5 => => check >=0 && <5 => false => => "ERROR"
-            storedVector.sl=5*8; // => 40 => 40/8=5
+            storedVector.sl = 5 * 8; // => 40 => 40/8=5
             // => I=0 => => "LOW"
             const out = performAdvancedCalculation();
             expect(out.L_class).toBe('ERROR');
@@ -995,19 +999,19 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 14 ==============
         test('14) "Edge" => L_score = minVal => => in range ([2,5)) => "MEDIUM"', () => {
-            likelihoodConfigObj['MEDIUM']=[2,5];
-            impactConfigObj['ANY']=[0,9];
-            mappingObj['MEDIUM-ANY']='FINE';
+            likelihoodConfigObj['MEDIUM'] = [2, 5];
+            impactConfigObj['ANY'] = [0, 9];
+            mappingObj['MEDIUM-ANY'] = 'FINE';
 
             // sum=16 => average=2 => => in [2,5) => "MEDIUM"
-            storedVector.sl=2;
-            storedVector.m=2;
-            storedVector.o=2;
-            storedVector.s=2;
-            storedVector.ed=2;
-            storedVector.ee=2;
-            storedVector.a=2;
-            storedVector.id=2;
+            storedVector.sl = 2;
+            storedVector.m = 2;
+            storedVector.o = 2;
+            storedVector.s = 2;
+            storedVector.ed = 2;
+            storedVector.ee = 2;
+            storedVector.a = 2;
+            storedVector.id = 2;
 
             const out = performAdvancedCalculation();
             expect(out.L_class).toBe('MEDIUM');
@@ -1016,9 +1020,9 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 15 ==============
         test('15) No vector => L=I=0 => finalRisk=OK => normal run', () => {
-            likelihoodConfigObj['LOW']=[0,9];
-            impactConfigObj['LOW']=[0,9];
-            mappingObj['LOW-LOW']='OK';
+            likelihoodConfigObj['LOW'] = [0, 9];
+            impactConfigObj['LOW'] = [0, 9];
+            mappingObj['LOW-LOW'] = 'OK';
 
             // storedVector => {}
             const r = performAdvancedCalculation();
@@ -1030,17 +1034,29 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 16 ==============
         test('16) vector => all 9 => => average=9, max=9 => L_class=? => I_class=? => final=ERROR', () => {
-            likelihoodConfigObj['LOW']=[0,9];
-            impactConfigObj['LOW']=[0,9];
-            mappingObj['LOW-LOW']='LOW';
+            likelihoodConfigObj['LOW'] = [0, 9];
+            impactConfigObj['LOW'] = [0, 9];
+            mappingObj['LOW-LOW'] = 'LOW';
 
             // 8 Threat => each=9 => sum=72 => avg=9
-            storedVector.sl=9; storedVector.m=9; storedVector.o=9; storedVector.s=9;
-            storedVector.ed=9; storedVector.ee=9; storedVector.a=9; storedVector.id=9;
+            storedVector.sl = 9;
+            storedVector.m = 9;
+            storedVector.o = 9;
+            storedVector.s = 9;
+            storedVector.ed = 9;
+            storedVector.ee = 9;
+            storedVector.a = 9;
+            storedVector.id = 9;
 
             // 8 Impact => each=9 => max=9
-            storedVector.lc=9; storedVector.li=9; storedVector.lav=9; storedVector.lac=9;
-            storedVector.fd=9; storedVector.rd=9; storedVector.nc=9; storedVector.pv=9;
+            storedVector.lc = 9;
+            storedVector.li = 9;
+            storedVector.lav = 9;
+            storedVector.lac = 9;
+            storedVector.fd = 9;
+            storedVector.rd = 9;
+            storedVector.nc = 9;
+            storedVector.pv = 9;
 
             const r = performAdvancedCalculation();
             // => getRangeClass(9, {LOW:[0,9]}) => <9 => false => => L_class=ERROR
@@ -1053,26 +1069,26 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 17 ==============
         test('17) mix => L=4.5 => MEDIUM => I=3 => "LOW"? => finalRisk=ML or similar', () => {
-            likelihoodConfigObj['LOW']=[0,3];
-            likelihoodConfigObj['MEDIUM']=[3,5];
-            likelihoodConfigObj['HIGH']=[5,9];
-            impactConfigObj['LOW']=[0,4];
-            impactConfigObj['HIGH']=[4,9];
-            mappingObj['MEDIUM-LOW']='ML';
-            mappingObj['MEDIUM-HIGH']='MH';
+            likelihoodConfigObj['LOW'] = [0, 3];
+            likelihoodConfigObj['MEDIUM'] = [3, 5];
+            likelihoodConfigObj['HIGH'] = [5, 9];
+            impactConfigObj['LOW'] = [0, 4];
+            impactConfigObj['HIGH'] = [4, 9];
+            mappingObj['MEDIUM-LOW'] = 'ML';
+            mappingObj['MEDIUM-HIGH'] = 'MH';
 
             // L => sum=36 => => 36/8=4.5 => => "MEDIUM"
-            storedVector.sl=9; // => 9
-            storedVector.m=9;  // => +9=18
-            storedVector.o=9;  // => +9=27
-            storedVector.s=0;  // => +0=27
-            storedVector.ed=9; // => +9=36
-            storedVector.ee=0; // => +0=36
-            storedVector.a=0;
-            storedVector.id=0; // => total=36 => /8=4.5 => "MEDIUM"
+            storedVector.sl = 9; // => 9
+            storedVector.m = 9;  // => +9=18
+            storedVector.o = 9;  // => +9=27
+            storedVector.s = 0;  // => +0=27
+            storedVector.ed = 9; // => +9=36
+            storedVector.ee = 0; // => +0=36
+            storedVector.a = 0;
+            storedVector.id = 0; // => total=36 => /8=4.5 => "MEDIUM"
 
             // Impact => max=3 => "LOW"
-            storedVector.lc=3;
+            storedVector.lc = 3;
 
             const ret = performAdvancedCalculation();
             expect(ret.L_class).toBe('MEDIUM');
@@ -1082,14 +1098,14 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 18 ==============
         test('18) vector => impact=8 => => "HIGH"', () => {
-            likelihoodConfigObj['ANY']=[0,10];
-            impactConfigObj['MEDIUM']=[3,5];
-            impactConfigObj['HIGH']=[5,9];
-            mappingObj['ANY-HIGH']='CRITICAL';
+            likelihoodConfigObj['ANY'] = [0, 10];
+            impactConfigObj['MEDIUM'] = [3, 5];
+            impactConfigObj['HIGH'] = [5, 9];
+            mappingObj['ANY-HIGH'] = 'CRITICAL';
 
             // L=0 => "ANY"
             // I=8 => => max=8 => [5,9) => "HIGH"
-            storedVector.lc=8;
+            storedVector.lc = 8;
 
             const res = performAdvancedCalculation();
             expect(res.L_class).toBe('ANY');
@@ -1099,15 +1115,21 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 19 ==============
         test('19) very negative => average=-100 => L=ERROR => => final=ERROR', () => {
-            likelihoodConfigObj['LOW']=[0,3];
-            likelihoodConfigObj['MEDIUM']=[3,6];
-            impactConfigObj['ANY']=[0,9];
-            mappingObj['LOW-ANY']='LA';
-            mappingObj['MEDIUM-ANY']='MA';
+            likelihoodConfigObj['LOW'] = [0, 3];
+            likelihoodConfigObj['MEDIUM'] = [3, 6];
+            impactConfigObj['ANY'] = [0, 9];
+            mappingObj['LOW-ANY'] = 'LA';
+            mappingObj['MEDIUM-ANY'] = 'MA';
 
             // sum=-800 => average=-100 => => "ERROR"
-            storedVector.sl=-100; storedVector.m=-100; storedVector.o=-100; storedVector.s=-100;
-            storedVector.ed=-100; storedVector.ee=-100; storedVector.a=-100; storedVector.id=-100;
+            storedVector.sl = -100;
+            storedVector.m = -100;
+            storedVector.o = -100;
+            storedVector.s = -100;
+            storedVector.ed = -100;
+            storedVector.ee = -100;
+            storedVector.a = -100;
+            storedVector.id = -100;
 
             // Impact => 0 => => "ANY"
             const ret = performAdvancedCalculation();
@@ -1118,11 +1140,11 @@ describe('shouldUseUrlLogic()', () => {
 
         // ============== TEST 20 ==============
         test('20) final console.log => check returned object', () => {
-            likelihoodConfigObj['LOW']=[0,9];
-            impactConfigObj['LOW']=[0,9];
-            mappingObj['LOW-LOW']='OK';
+            likelihoodConfigObj['LOW'] = [0, 9];
+            impactConfigObj['LOW'] = [0, 9];
+            mappingObj['LOW-LOW'] = 'OK';
 
-            storedVector.sl=1; // => average=1/8=0.125 => "LOW"
+            storedVector.sl = 1; // => average=1/8=0.125 => "LOW"
             const r = performAdvancedCalculation();
             expect(r).toEqual({
                 L_score: expect.any(Number),
@@ -1131,6 +1153,91 @@ describe('shouldUseUrlLogic()', () => {
                 I_class: 'LOW',
                 finalRisk: 'OK'
             });
+        });
+    });
+    /**
+     * --------------------------------------
+     * TEST SUITE: UI Config Usage
+     * --------------------------------------
+     */
+
+    describe('UI Config Usage', () => {
+        // Assume "partials" is defined in script.js or elsewhere. If not, define it here for testing:
+        const partials = [
+            "sl", "m", "o", "s", "ed", "ee", "a", "id",
+            "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
+        ];
+
+        beforeEach(() => {
+            // 1) Prepare the DOM for each test
+            document.body.innerHTML = `<select id="configurationSelect"></select>`;
+            partials.forEach(id => {
+                const input = document.createElement('input');
+                input.id = id;
+                document.body.appendChild(input);
+            });
+        });
+
+        afterEach(() => {
+            // 2) Clean the DOM after each test
+            document.body.innerHTML = '';
+            // 3) Reset config if needed (in case you modify it within a test)
+            config.uiSettings.disableElements = false;
+            config.uiSettings.disableDropdown = false;
+        });
+
+        test('disableElements = true => input fields get disabled after calling calculate()', () => {
+            // Arrange
+            config.uiSettings.disableElements = true;
+
+            // Act
+            // Simulate your "calculate()" usage which should disable the inputs
+            calculate();
+
+            // Assert
+            partials.forEach(id => {
+                const elem = document.getElementById(id);
+                expect(elem.disabled).toBe(true);
+            });
+        });
+
+        test('disableElements = false => input fields stay enabled after calling calculate()', () => {
+            // Arrange
+            config.uiSettings.disableElements = false;
+
+            // Act
+            calculate();
+
+            // Assert
+            partials.forEach(id => {
+                const elem = document.getElementById(id);
+                expect(elem.disabled).toBe(false);
+            });
+        });
+
+        test('disableDropdown = true => configSelect is disabled after calling addUrlConfigurationOption()', () => {
+            // Arrange
+            const configSelect = document.getElementById('configurationSelect');
+            expect(configSelect.disabled).toBe(false); // Initially not disabled
+            config.uiSettings.disableDropdown = true;
+
+            // Act
+            addUrlConfigurationOption();
+
+            // Assert
+            expect(configSelect.disabled).toBe(true);
+        });
+
+        test('disableDropdown = false => configSelect stays enabled after calling addUrlConfigurationOption()', () => {
+            // Arrange
+            const configSelect = document.getElementById('configurationSelect');
+            config.uiSettings.disableDropdown = false;
+
+            // Act
+            addUrlConfigurationOption();
+
+            // Assert
+            expect(configSelect.disabled).toBe(false);
         });
     });
 });
