@@ -194,10 +194,16 @@ export function loadVectors(vector) {
     const values = vector.split("/");
 
     if (values.length !== 16) {
-        swal("The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
-            "error").then(() => {
-            const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
-            window.location.href = window.location.origin + window.location.pathname + defaultVector;
+        swal({
+            title: "Invalid Vector Format",
+            text: "The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
+            icon: "error",
+            button: "OK"
+        }).then((willProceed) => {
+            if (willProceed) {
+                const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+                window.location.href = window.location.origin + window.location.pathname + defaultVector;
+            }
         });
         return;
     }

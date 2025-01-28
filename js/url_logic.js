@@ -97,9 +97,17 @@ export function parseUrlParameters() {
     } catch (err) {
         console.error("[URL_LOGIC] parseUrlParameters() error:", err);
         if (typeof swal === 'function') {
-            swal("Error", "Parsing failed. Falling back to default logic.", "error").then(() => {
-                const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
-                window.location.href = window.location.origin + window.location.pathname + defaultVector;
+            swal({
+                title: "Parsing Error",
+                text: "Parsing failed. Default configuration will be used.",
+                icon: "error",
+                button: "OK"
+            }).then((willProceed) => {
+                if (willProceed) {
+                    // Weiterleitung mit Default-Vector
+                    const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+                    window.location.href = window.location.origin + window.location.pathname + defaultVector;
+                }
             });
         }
         return false;
@@ -377,9 +385,11 @@ function checkRequiredParameters() {
             text: `The following parameters are missing: ${missingParams.join(', ')}. Default configuration will be used.`,
             icon: "warning",
             button: "OK"
-        }).then(() => {
-            const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
-            window.location.href = window.location.origin + window.location.pathname + defaultVector;
+        }).then((willProceed) => {
+            if (willProceed) {
+                const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+                window.location.href = window.location.origin + window.location.pathname + defaultVector;
+            }
         });
         return false;
     }

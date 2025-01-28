@@ -248,17 +248,37 @@ describe('loadVectors()', () => {
         });
     });
 
-    test('Invalid vector format => error => swal', () => {
-        // Mock swal
-        window.swal = jest.fn();
+    test('Invalid vector format => error => swal with redirect after confirmation', () => {
+        window.swal = jest.fn(() =>
+            Promise.resolve(true) // Simuliere, dass der Benutzer auf "OK" klickt
+        );
+
+        // Mock window.location
+        delete window.location;
+        window.location = {
+            origin: 'http://example.com',
+            pathname: '/path',
+            href: '',
+        };
+
         const invalidVector = 'invalid_vector_format';
 
         loadVectors(invalidVector);
 
-        expect(window.swal).toHaveBeenCalledWith(
-            "The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
-            "error"
-        );
+        expect(window.swal).toHaveBeenCalledWith({
+            title: "Invalid Vector Format",
+            text: "The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
+            icon: "error",
+            button: "OK",
+        });
+
+        return window.swal().then(() => {
+            const expectedUrl =
+                window.location.origin +
+                window.location.pathname +
+                "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+            expect(window.location.href).toBe(expectedUrl);
+        });
     });
 });
 
@@ -315,16 +335,37 @@ describe('loadVectors()', () => {
         });
     });
 
-    test('Invalid vector format => error => swal', () => {
-        window.swal = jest.fn();
+    test('Invalid vector format => error => swal with redirect after confirmation', () => {
+        window.swal = jest.fn(() =>
+            Promise.resolve(true)
+        );
+
         const invalidVector = 'invalid_vector_format';
+
+        // Mock window.location
+        delete window.location;
+        window.location = {
+            origin: 'http://example.com',
+            pathname: '/path',
+            href: '',
+        };
 
         loadVectors(invalidVector);
 
-        expect(window.swal).toHaveBeenCalledWith(
-            "The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
-            "error"
-        );
+        expect(window.swal).toHaveBeenCalledWith({
+            title: "Invalid Vector Format",
+            text: "The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
+            icon: "error",
+            button: "OK",
+        });
+
+        return window.swal().then(() => {
+            const expectedUrl =
+                window.location.origin +
+                window.location.pathname +
+                "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+            expect(window.location.href).toBe(expectedUrl);
+        });
     });
 });
 
@@ -336,7 +377,8 @@ describe('loadVectors()', () => {
 describe('shouldUseUrlLogic()', () => {
     beforeEach(() => {
         // Mock swal
-        global.swal = jest.fn();
+        global.swal = jest.fn(() =>
+            Promise.resolve(true));
     });
 
     afterEach(() => {
@@ -432,15 +474,43 @@ describe('shouldUseUrlLogic()', () => {
 
         // --- TEST 1 ---
         test('No parameters => fail => missing likelihoodConfig => swal => false', () => {
-            setLocationSearch('');
-            const result = parseUrlParameters();
-            expect(result).toBe(false);
-            expect(global.swal).toHaveBeenCalledWith(
-                "Error",
-                "Parsing failed. Falling back to default logic.",
-                "error"
+            global.swal = jest.fn(() =>
+                Promise.resolve(true)
             );
+
+            // Helper function: Set window.location.search
+            const setLocationSearch = (searchString) => {
+                delete window.location;
+                window.location = {
+                    search: searchString,
+                    origin: 'http://example.com',
+                    pathname: '/path',
+                    href: '',
+                };
+            };
+
+            setLocationSearch('');
+
+            const result = parseUrlParameters();
+
+            expect(result).toBe(false);
+
+            expect(global.swal).toHaveBeenCalledWith({
+                title: "Parsing Error",
+                text: "Parsing failed. Default configuration will be used.",
+                icon: "error",
+                button: "OK",
+            });
+
+            return global.swal().then(() => {
+                const expectedUrl =
+                    window.location.origin +
+                    window.location.pathname +
+                    "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+                expect(window.location.href).toBe(expectedUrl);
+            });
         });
+
 
         // --- TEST 2 ---
         test('Only likelihoodConfig => missing impact + mapping => fail', () => {
