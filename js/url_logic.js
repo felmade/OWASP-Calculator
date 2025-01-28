@@ -33,8 +33,8 @@ const ALLOWED_VECTOR_KEYS = new Set([
  * the storedVector can be synchronized with the UI.
  */
 const PARTIALS = [
-    "sl","m","o","s","ed","ee","a","id",
-    "lc","li","lav","lac","fd","rd","nc","pv"
+    "sl", "m", "o", "s", "ed", "ee", "a", "id",
+    "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
 ];
 
 /**
@@ -64,17 +64,17 @@ export function shouldUseUrlLogic() {
 export function parseUrlParameters() {
     try {
         const likelihoodConfigStr = getUrlParameter('likelihoodConfig');
-        const impactConfigStr     = getUrlParameter('impactConfig');
-        const mappingStr          = getUrlParameter('mapping');
-        const vectorParam         = getUrlParameter('vector'); // optional
+        const impactConfigStr = getUrlParameter('impactConfig');
+        const mappingStr = getUrlParameter('mapping');
+        const vectorParam = getUrlParameter('vector'); // optional
 
         // 1) parse L & I config
         likelihoodConfigObj = parseConfiguration(likelihoodConfigStr);
-        impactConfigObj     = parseConfiguration(impactConfigStr);
+        impactConfigObj = parseConfiguration(impactConfigStr);
 
         // 2) Create level arrays (sorted by minVal)
         likelihoodLevels = configObjToSortedLevels(likelihoodConfigObj);
-        impactLevels     = configObjToSortedLevels(impactConfigObj);
+        impactLevels = configObjToSortedLevels(impactConfigObj);
 
         // 3) Mapping NxM
         mappingObj = parseNxMMapping(likelihoodLevels, impactLevels, mappingStr);
@@ -97,7 +97,10 @@ export function parseUrlParameters() {
     } catch (err) {
         console.error("[URL_LOGIC] parseUrlParameters() error:", err);
         if (typeof swal === 'function') {
-            swal("Error", "Parsing failed. Falling back to default logic.", "error");
+            swal("Error", "Parsing failed. Falling back to default logic.", "error").then(() => {
+                const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+                window.location.href = window.location.origin + window.location.pathname + defaultVector;
+            });
         }
         return false;
     }
@@ -133,11 +136,11 @@ export function performAdvancedCalculation() {
 
     if (storedVector) {
         // Threat fields => average
-        const threatKeys = ["sl","m","o","s","ed","ee","a","id"];
+        const threatKeys = ["sl", "m", "o", "s", "ed", "ee", "a", "id"];
         L_score = averageVector(storedVector, threatKeys);
 
         // Impact fields => max
-        const impactKeys = ["lc","li","lav","lac","fd","rd","nc","pv"];
+        const impactKeys = ["lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"];
         I_score = maxVector(storedVector, impactKeys);
     } else {
         console.warn("[performAdvancedCalculation] No vector => using 0 for L&I");
@@ -177,7 +180,7 @@ export function performAdvancedCalculation() {
         VectorElement.style.visibility = 'hidden';
     }
 
-    const result = { L_score, I_score, L_class, I_class, finalRisk };
+    const result = {L_score, I_score, L_class, I_class, finalRisk};
     console.log("[performAdvancedCalculation] done:", result);
     return result;
 }
@@ -238,10 +241,10 @@ function configObjToSortedLevels(configObj) {
     const tempArr = [];
     for (const level in configObj) {
         const [minVal, maxVal] = configObj[level];
-        tempArr.push({ level, minVal, maxVal });
+        tempArr.push({level, minVal, maxVal});
     }
     // Sort by minVal
-    tempArr.sort((a,b) => a.minVal - b.minVal);
+    tempArr.sort((a, b) => a.minVal - b.minVal);
     return tempArr.map(item => item.level);
 }
 
@@ -255,8 +258,8 @@ function parseNxMMapping(lLevels, iLevels, shortStr) {
     const N = lLevels.length;
     const M = iLevels.length;
     const arr = shortStr.split(',').map(s => s.trim());
-    if (arr.length !== N*M) {
-        throw new Error(`Need exactly ${N*M} mapping entries, but got ${arr.length}`);
+    if (arr.length !== N * M) {
+        throw new Error(`Need exactly ${N * M} mapping entries, but got ${arr.length}`);
     }
 
     let index = 0;
@@ -276,7 +279,7 @@ function parseNxMMapping(lLevels, iLevels, shortStr) {
  * => { sl:1, m:2, o:3, ... } (only the 16 ALLOWED_VECTOR_KEYS)
  */
 function parseVector(str) {
-    const clean = str.replace(/^\(/,'').replace(/\)$/,'');
+    const clean = str.replace(/^\(/, '').replace(/\)$/, '');
     const segments = clean.split('/');
     if (!segments.length) {
         throw new Error("Empty vector string");
@@ -374,6 +377,9 @@ function checkRequiredParameters() {
             text: `The following parameters are missing: ${missingParams.join(', ')}. Default configuration will be used.`,
             icon: "warning",
             button: "OK"
+        }).then(() => {
+            const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+            window.location.href = window.location.origin + window.location.pathname + defaultVector;
         });
         return false;
     }
@@ -432,9 +438,11 @@ export function getStoredConfiguration() {
         impact: impactConfigObj
     };
 }
+
 export function getStoredMapping() {
     return mappingObj;
 }
+
 export function getStoredVector() {
     return storedVector;
 }

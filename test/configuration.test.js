@@ -256,8 +256,7 @@ describe('loadVectors()', () => {
         loadVectors(invalidVector);
 
         expect(window.swal).toHaveBeenCalledWith(
-            "Hey!!",
-            "The vector is not correct, make sure you have copied it correctly",
+            "The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
             "error"
         );
     });
@@ -323,8 +322,7 @@ describe('loadVectors()', () => {
         loadVectors(invalidVector);
 
         expect(window.swal).toHaveBeenCalledWith(
-            "Hey!!",
-            "The vector is not correct, make sure you have copied it correctly",
+            "The provided vector format is invalid. Please ensure it is copied correctly and follows the expected format.",
             "error"
         );
     });
