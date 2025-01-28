@@ -104,7 +104,6 @@ export function parseUrlParameters() {
                 button: "OK"
             }).then((willProceed) => {
                 if (willProceed) {
-                    // Weiterleitung mit Default-Vector
                     const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
                     window.location.href = window.location.origin + window.location.pathname + defaultVector;
                 }
@@ -183,11 +182,6 @@ export function performAdvancedCalculation() {
         RSElem.style.fontSize = '24px';
     }
 
-    const VectorElement = document.querySelector('.vector');
-    if (VectorElement) {
-        VectorElement.style.visibility = 'hidden';
-    }
-
     const result = {L_score, I_score, L_class, I_class, finalRisk};
     console.log("[performAdvancedCalculation] done:", result);
     return result;
@@ -202,8 +196,7 @@ function syncStoredVectorFromUI() {
     PARTIALS.forEach(key => {
         const el = document.getElementById(key);
         if (!el) return;
-        const valNum = parseFloat(el.value) || 0;
-        storedVector[key] = valNum;
+        storedVector[key] = parseFloat(el.value) || 0;
     });
 }
 
@@ -211,6 +204,49 @@ function syncStoredVectorFromUI() {
    ========== HELPER FUNCTIONS ===============
    ===========================================
 */
+
+/**
+ * Initializes event listeners for all input fields in PARTIALS
+ * and updates the VECTOR field in the UI whenever a value changes.
+ */
+export function initializeVectorUpdate() {
+    // Add input event listeners for all partial fields
+    PARTIALS.forEach(key => {
+        key = key.toLowerCase();
+        const inputElement = document.getElementById(key);
+        if (inputElement) {
+            inputElement.addEventListener('input', () => {
+                // (1) Update the stored vector with the current input value
+                storedVector[key] = parseFloat(inputElement.value) || 0;
+
+                // (2) Update the VECTOR field in the UI
+                updateVectorDisplay();
+            });
+        } else {
+            console.warn(`[initializeVectorUpdate] Input field with ID "${key}" not found.`);
+        }
+    });
+
+    console.log("[VECTOR_UPDATER] initializeVectorUpdate() completed: Event listeners added.");
+}
+
+/**
+ * Updates the VECTOR field (href and text) in the UI
+ * based on the current values in storedVector.
+ */
+function updateVectorDisplay() {
+    const vectorElement = document.getElementById('score');
+    if (vectorElement) {
+        // (1) Build the vector string from storedVector
+        const vectorString = Object.keys(storedVector)
+            .map(key => `${key.toUpperCase()}:${storedVector[key]}`)
+            .join('/');
+
+        // (2) Update the href and text content of the VECTOR field
+        vectorElement.href = `https://felmade.github.io/OWASP-Calculator/?vector=(${vectorString})`;
+        vectorElement.textContent = `(${vectorString})`;
+    }
+}
 
 /**
  * parseConfiguration("LOW:0-2;MEDIUM:2-5;HIGH:5-9")
@@ -438,6 +474,16 @@ export function getUrlParameter(name) {
     if (!results[2]) return null;
     return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
+
+/**
+* This ensures that the vector updater functionality
+* is initialized once the DOM is fully loaded.
+*/
+document.addEventListener('DOMContentLoaded', () => {
+    initializeVectorUpdate();
+
+    console.log("[INIT] Vector updater initialized on DOMContentLoaded.");
+});
 
 /**
  * Getter functions, in case you need them externally
