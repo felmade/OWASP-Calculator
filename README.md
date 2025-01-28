@@ -76,7 +76,7 @@ Suppose you want:
 - Predefined factors
 
 Your URL might look like this:  
-`?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9&vector=(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)`
+`?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9&vector=(sl:1/m:1/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)`
 
 1. **likelihoodConfig** = `LOW:0-3;MEDIUM:3-6;HIGH:6-9`
 2. **impactConfig** = `NOTE:0-3;LOW:3-6;HIGH:6-9`
@@ -84,7 +84,7 @@ Your URL might look like this:
     - **n=3** (LOW, MEDIUM, HIGH)
     - **m=3** (NOTE, LOW, HIGH)
     - => 3×3 = 9 values
-4. **vector** = `(sl:1/m:2/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)`
+4. **vector** = `(sl:1/m:1/o:3/s:4/ed:5/ee:6/a:7/id:0/lc:9/li:0/lav:0/lac:2/fd:5/rd:5/nc:0/pv:1)`
 
 ### Script Workflow
 
