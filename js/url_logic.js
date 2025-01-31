@@ -1,5 +1,8 @@
 // File: url_logic.js
 
+// Automatically initialize the complete URL when the page loads
+document.addEventListener("DOMContentLoaded", updateCompleteURL);
+
 /**
  * =====================================
  * ========== INTERNAL STORAGE ==========
@@ -66,7 +69,7 @@ export function parseUrlParameters() {
         const likelihoodConfigStr = getUrlParameter('likelihoodConfig');
         const impactConfigStr = getUrlParameter('impactConfig');
         const mappingStr = getUrlParameter('mapping');
-        const vectorParam = getUrlParameter('vector'); // optional
+        const vectorParam = getUrlParameter('vector');
 
         // 1) parse L & I config
         likelihoodConfigObj = parseConfiguration(likelihoodConfigStr);
@@ -83,7 +86,7 @@ export function parseUrlParameters() {
         if (vectorParam) {
             storedVector = parseVector(vectorParam);
         } else {
-            storedVector = {};
+            storedVector = "(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
         }
 
         console.log("[URL_LOGIC] parseUrlParameters() OK", {
@@ -219,8 +222,10 @@ export function initializeVectorUpdate() {
                 // (1) Update the stored vector with the current input value
                 storedVector[key] = parseFloat(inputElement.value) || 0;
 
-                // (2) Update the VECTOR field in the UI
+                // (2) Update the VECTOR in the UI
                 updateVectorDisplay();
+
+                updateCompleteURL();
             });
         } else {
             console.warn(`[initializeVectorUpdate] Input field with ID "${key}" not found.`);
@@ -245,6 +250,52 @@ function updateVectorDisplay() {
         // (2) Update the href and text content of the VECTOR field
         vectorElement.href = `https://felmade.github.io/OWASP-Calculator/?vector=(${vectorString})`;
         vectorElement.textContent = `(${vectorString})`;
+    }
+}
+
+/**
+ * Updates the Complete-URL field.
+ * Wird im DOMContentLoaded-Event und bei jeder Input-Änderung getriggert.
+ */
+export function updateCompleteURL() {
+    const completeURLDiv = document.querySelector('.completeURL');
+    const completeURLElement = document.getElementById('completeURL');
+
+    if (!completeURLDiv || !completeURLElement) {
+        console.error("[ERROR] Could not find .completeURL div or #completeURL element.");
+        return;
+    }
+
+    try {
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const likelihoodConfig = urlParams.get('likelihoodConfig');
+        const impactConfig = urlParams.get('impactConfig');
+        const mappingConfig = urlParams.get('mapping');
+
+        const vectorString = "(" + Object.keys(storedVector)
+            .map(key => `${key.toUpperCase()}:${storedVector[key]}`)
+            .join("/") + ")";
+
+        // (2) Komplette URL zusammensetzen
+        let completeURL = "https://felmade.github.io/OWASP-Calculator/";
+
+        if (!likelihoodConfig && !impactConfig && !mappingConfig) {
+            // Keine Config => Nur ?vector=...
+            completeURL += `?vector=${vectorString}`;
+        } else {
+            completeURL += `?likelihoodConfig=${likelihoodConfig}`
+                + `&impactConfig=${impactConfig}`
+                + `&mapping=${mappingConfig}`
+                + `&vector=${vectorString}`;
+        }
+
+        completeURLElement.href = completeURL;
+        completeURLElement.textContent = completeURL;
+
+        console.log("[DEBUG] Complete URL updated:", completeURL);
+    } catch (error) {
+        console.error("[ERROR] Exception in updateCompleteURL:", error);
     }
 }
 

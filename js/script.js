@@ -14,6 +14,9 @@ import {parseUrlParameters, performAdvancedCalculation, shouldUseUrlLogic, store
 
 import {config} from '../config.js';
 
+// Automatically initialize the complete URL when the page loads
+document.addEventListener("DOMContentLoaded", updateCompleteURL);
+
 /**
  * CANVAS / CHART.JS
  * -----------------
@@ -156,9 +159,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 3) vector in URL?
-    if (getUrlParameter("vector")) {
+    if (!getUrlParameter("vector")) {
+        loadVectors("(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)");
+    } else {
         loadVectors(getUrlParameter("vector"));
     }
+
 
     // 4) Inputs => onChange => calculate
     partials.forEach(factor => {
