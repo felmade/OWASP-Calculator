@@ -14,9 +14,6 @@ import {parseUrlParameters, performAdvancedCalculation, shouldUseUrlLogic, store
 
 import {config} from '../config.js';
 
-// Automatically initialize the complete URL when the page loads
-document.addEventListener("DOMContentLoaded", updateCompleteURL);
-
 /**
  * CANVAS / CHART.JS
  * -----------------
@@ -160,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 3) vector in URL?
     if (!getUrlParameter("vector")) {
-        loadVectors("(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)");
+        loadVectors();
     } else {
         loadVectors(getUrlParameter("vector"));
     }
@@ -215,8 +212,7 @@ export function loadVectors(vector) {
     }
 
     for (let i = 0; i < 16; i++) {
-        const val = values[i].split(":")[1].trim();
-        document.getElementById(partials[i]).value = val;
+        document.getElementById(partials[i]).value = values[i].split(":")[1].trim();
     }
 
     calculate();
@@ -325,8 +321,7 @@ function fillUIFromStoredVector() {
     partials.forEach(f => {
         const elem = document.getElementById(f);
         if (!elem) return;
-        const val = (storedVector[f] !== undefined) ? storedVector[f] : 0;
-        elem.value = val;
+        elem.value = (storedVector[f] !== undefined) ? storedVector[f] : 0;
     });
 }
 
@@ -480,7 +475,7 @@ function getCriticality(L, I) {
 function updateRiskChart(dataset, RS) {
     if (!riskChart) return;
 
-    let c = 0;
+    let c;
     switch (RS) {
         case "LOW":
             c = 3;

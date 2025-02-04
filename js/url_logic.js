@@ -20,7 +20,10 @@ export let impactConfigObj = {};
 export let likelihoodLevels = [];
 export let impactLevels = [];
 export let mappingObj = {};
-export let storedVector = {};
+export let storedVector = {
+    "sl": 1, "m": 1, "o": 0, "s": 2, "ed": 0, "ee": 0, "a": 0, "id": 0,
+    "lc": 0, "li": 0, "lav": 0, "lac": 0, "fd": 0, "rd": 0, "nc": 0, "pv": 0
+};
 
 /**
  * 16 fields allowed in the vector.
@@ -86,7 +89,10 @@ export function parseUrlParameters() {
         if (vectorParam) {
             storedVector = parseVector(vectorParam);
         } else {
-            storedVector = "(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+            storedVector = {
+                "sl": 1, "m": 1, "o": 0, "s": 2, "ed": 0, "ee": 0, "a": 0, "id": 0,
+                "lc": 0, "li": 0, "lav": 0, "lac": 0, "fd": 0, "rd": 0, "nc": 0, "pv": 0
+            };
         }
 
         console.log("[URL_LOGIC] parseUrlParameters() OK", {
