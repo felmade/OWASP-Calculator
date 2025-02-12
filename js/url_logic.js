@@ -1,6 +1,8 @@
 // File: url_logic.js
 
 // Automatically initialize the complete URL when the page loads
+import {config} from "../config.js";
+
 document.addEventListener("DOMContentLoaded", updateCompleteURL);
 
 /**
@@ -254,7 +256,7 @@ function updateVectorDisplay() {
             .join('/');
 
         // (2) Update the href and text content of the VECTOR field
-        vectorElement.href = `https://felmade.github.io/OWASP-Calculator/?vector=(${vectorString})`;
+        vectorElement.href = `${config.baseUrl}?vector=${vectorString}`;
         vectorElement.textContent = `(${vectorString})`;
     }
 }
@@ -284,7 +286,7 @@ export function updateCompleteURL() {
             .join("/") + ")";
 
         // (2) Komplette URL zusammensetzen
-        let completeURL = "https://felmade.github.io/OWASP-Calculator/";
+        let completeURL = config.baseUrl;
 
         if (!likelihoodConfig && !impactConfig && !mappingConfig) {
             // Keine Config => Nur ?vector=...

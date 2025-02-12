@@ -7,6 +7,10 @@
  */
 
 export const config = {
+
+    // Base URL that can be configured (e.g. for different environments).
+    baseUrl: "https://felmade.github.io/OWASP-Calculator/",
+
     // Risk configurations define thresholds for LOW, MEDIUM, and HIGH risk levels
     riskConfigurations: {
         "Default Configuration": {

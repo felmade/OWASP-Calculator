@@ -14,6 +14,8 @@ import {parseUrlParameters, performAdvancedCalculation, shouldUseUrlLogic, store
 
 import {config} from '../config.js';
 
+document.addEventListener("DOMContentLoaded", calculate);
+
 /**
  * CANVAS / CHART.JS
  * -----------------
@@ -278,7 +280,7 @@ export function calculate() {
 
     const score = generateScore(threatAgentFactors, technicalImpactFactors);
     $("#score").text(score);
-    $("#score").attr("href", `https://felmade.github.io/OWASP-Calculator/?vector=${score}`);
+    $("#score").attr("href", `${config.baseUrl}?vector=${score}`);
 
     const RS = getCriticality(FLS, FIS);
     updateRiskLevel(".RS", RS);
