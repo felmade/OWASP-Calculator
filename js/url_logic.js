@@ -239,8 +239,6 @@ export function initializeVectorUpdate() {
             console.warn(`[initializeVectorUpdate] Input field with ID "${key}" not found.`);
         }
     });
-
-    console.log("[VECTOR_UPDATER] initializeVectorUpdate() completed: Event listeners added.");
 }
 
 /**
@@ -263,7 +261,6 @@ function updateVectorDisplay() {
 
 /**
  * Updates the Complete-URL field.
- * Wird im DOMContentLoaded-Event und bei jeder Input-Änderung getriggert.
  */
 export function updateCompleteURL() {
     const completeURLDiv = document.querySelector('.completeURL');
@@ -301,7 +298,6 @@ export function updateCompleteURL() {
         completeURLElement.href = completeURL;
         completeURLElement.textContent = completeURL;
 
-        console.log("[DEBUG] Complete URL updated:", completeURL);
     } catch (error) {
         console.error("[ERROR] Exception in updateCompleteURL:", error);
     }
@@ -540,8 +536,6 @@ export function getUrlParameter(name) {
 */
 document.addEventListener('DOMContentLoaded', () => {
     initializeVectorUpdate();
-
-    console.log("[INIT] Vector updater initialized on DOMContentLoaded.");
 });
 
 /**
