@@ -1,3 +1,78 @@
+# OWASP Risk Assessment Calculator – Configuration and Standard Logic
+
+This document explains the **default logic** of the OWASP Risk Assessment Calculator and how it can be extended using **URL-based configuration**.
+
+---
+
+## Standard Logic
+
+The calculator consists of **four dropdown menus**, which can be configured in `config.js`.  
+By default, it follows the **OWASP 3×3 risk matrix**, but these settings can be adjusted.  
+If the **URL logic** is used, input fields can be locked to prevent manual changes.
+
+### Default Risk Configuration
+
+In `config.js`, the default configuration defines **three risk levels** (LOW, MEDIUM, HIGH) based on numerical thresholds.
+
+```javascript
+export const config = {
+    // Risk configurations define thresholds for LOW, MEDIUM, and HIGH risk levels
+    riskConfigurations: {
+        "Default Configuration": {
+            LOW: [0, 3],
+            MEDIUM: [3, 6],
+            HIGH: [6, 9]
+        },
+        "Configuration 1": {
+            LOW: [0, 5],
+            MEDIUM: [5, 6],
+            HIGH: [6, 9]
+        },
+        "Configuration 2": {
+            LOW: [0, 7.5],
+            MEDIUM: [7.5, 8],
+            HIGH: [8, 9]
+        },
+        "Configuration 3": {
+            LOW: [0, 6.5],
+            MEDIUM: [6.5, 7],
+            HIGH: [7, 9]
+        }
+    },
+
+    // UI settings define behavior for disabling elements and dropdowns (when URL logic is being used)
+    uiSettings: {
+        disableElements: false,  // Disable input elements in the UI
+        disableDropdown: true     // Disable the configuration dropdown menu
+    }
+};
+```
+
+By default, the risk levels map to the following matrix:
+
+|          | NOTE   | LOW    | HIGH     |
+|----------|--------|--------|----------|
+| LOW      | NOTE   | LOW    | MEDIUM   |
+| MEDIUM   | LOW    | MEDIUM | HIGH     |
+| HIGH     | MEDIUM | HIGH   | CRITICAL |
+
+### Handling Edge Cases and Overlapping Thresholds
+
+Edge cases are handled as follows:
+
+- If a value lies exactly on a threshold (e.g., `LOW: [0, 3]`, `MEDIUM: [3, 6]`), it is assigned to the **higher range** (`MEDIUM` in this case).
+- This behavior can be observed by clicking the **"How is Severity Risk Calculated?"** button.
+- **Overlapping mappings should be avoided**, as they may produce **unexpected results**. Ensure that each threshold is clearly defined without ambiguity.
+
+### Optional: Vector Parameter (vector)
+
+The vector parameter allows users to predefine 16 input factors.
+
+Example:
+- ?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)
+
+None of the values must exceed 9.
+
 # OWASP Risk Assessment Calculator – URL Logic
 
 This document describes the URL logic for configuring our OWASP Risk Assessment Calculator.

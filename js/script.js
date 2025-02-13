@@ -10,9 +10,18 @@
  * place (or when the user manually selects one of the standard configurations).
  */
 
-import {parseUrlParameters, performAdvancedCalculation, shouldUseUrlLogic, storedVector} from "./url_logic.js";
+import {
+    parseUrlParameters,
+    performAdvancedCalculation,
+    shouldUseUrlLogic,
+    storedVector,
+    updateCompleteURL
+} from "./url_logic.js";
 
 import {config} from '../config.js';
+
+document.addEventListener("DOMContentLoaded", calculate);
+document.addEventListener("DOMContentLoaded", updateCompleteURL);
 
 /**
  * CANVAS / CHART.JS
@@ -156,9 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 3) vector in URL?
-    if (getUrlParameter("vector")) {
+    if (!getUrlParameter("vector")) {
+        loadVectors();
+    } else {
         loadVectors(getUrlParameter("vector"));
     }
+
 
     // 4) Inputs => onChange => calculate
     partials.forEach(factor => {
@@ -166,6 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (element) {
             element.addEventListener("change", () => {
                 calculate();
+                updateURLInAddressBar();
             });
         }
     });
@@ -208,12 +221,68 @@ export function loadVectors(vector) {
         return;
     }
 
+    // Loop through each of the 16 factors and update both the input fields and storedVector
     for (let i = 0; i < 16; i++) {
-        const val = values[i].split(":")[1].trim();
-        document.getElementById(partials[i]).value = val;
+        const key = partials[i];
+        const valueStr = values[i].split(":")[1].trim();
+
+        // Update the input field
+        const inputElement = document.getElementById(key);
+        if (inputElement) {
+            inputElement.value = valueStr;
+        }
+
+        // Update the storedVector (convert the string to a float, fallback to 0)
+        storedVector[key] = parseFloat(valueStr) || 0;
     }
 
     calculate();
+}
+
+/**
+ * UPDATEURLINADDRESSBAR()
+ * ------------------------
+ * Updates the URL in the browser's address bar to reflect the current vector.
+ * It constructs a new URL based on the current stored vector and optionally existing URL parameters:
+ * - likelihoodConfig, impactConfig, and mapping.
+ * If these parameters are not present, only the vector parameter is included.
+ * The URL is updated without reloading the page using the History API (window.history.replaceState).
+ *
+ * The base URL is taken from the configuration (config.baseUrl).
+ */
+function updateURLInAddressBar() {
+    // Build the vector string from storedVector
+    const vectorString = "(" + Object.keys(storedVector)
+        .map(key => `${key.toUpperCase()}:${storedVector[key]}`)
+        .join("/") + ")";
+
+    // Retrieve current URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const likelihoodConfig = urlParams.get('likelihoodConfig');
+    const impactConfig = urlParams.get('impactConfig');
+    const mappingConfig = urlParams.get('mapping');
+
+    // Construct the complete URL using the base URL from the configuration
+    let completeURL = window.location.origin + window.location.pathname;
+    let queryString = "";
+
+    // Add the optional parameters if they exist
+    if (likelihoodConfig) {
+        queryString += `likelihoodConfig=${likelihoodConfig}&`;
+    }
+    if (impactConfig) {
+        queryString += `impactConfig=${impactConfig}&`;
+    }
+    if (mappingConfig) {
+        queryString += `mapping=${mappingConfig}&`;
+    }
+
+    // Always include the vector parameter
+    queryString += `vector=${vectorString}`;
+    completeURL += `?${queryString}`;
+
+    // Update the URL in the address bar without reloading the page
+    window.history.replaceState(null, '', completeURL);
 }
 
 /**
@@ -222,7 +291,7 @@ export function loadVectors(vector) {
  * Main calculation: Checks whether URL logic => parseUrlParameters + performAdvancedCalculation
  * or whether we use our fallback configuration.
  */
-export function calculate() {
+export function calculate(){
     if (shouldUseUrlLogic()) {
         console.log("[INFO] We have the correct parameters -> URL-Logic is being used.");
         const parseOk = parseUrlParameters();
@@ -276,7 +345,7 @@ export function calculate() {
 
     const score = generateScore(threatAgentFactors, technicalImpactFactors);
     $("#score").text(score);
-    $("#score").attr("href", `https://felmade.github.io/OWASP-Calculator/?vector=${score}`);
+    $("#score").attr("href", `${config.baseUrl}?vector=${score}`);
 
     const RS = getCriticality(FLS, FIS);
     updateRiskLevel(".RS", RS);
@@ -319,8 +388,7 @@ function fillUIFromStoredVector() {
     partials.forEach(f => {
         const elem = document.getElementById(f);
         if (!elem) return;
-        const val = (storedVector[f] !== undefined) ? storedVector[f] : 0;
-        elem.value = val;
+        elem.value = (storedVector[f] !== undefined) ? storedVector[f] : 0;
     });
 }
 
@@ -474,7 +542,7 @@ function getCriticality(L, I) {
 function updateRiskChart(dataset, RS) {
     if (!riskChart) return;
 
-    let c = 0;
+    let c;
     switch (RS) {
         case "LOW":
             c = 3;

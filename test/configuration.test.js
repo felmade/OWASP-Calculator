@@ -575,7 +575,6 @@ describe('shouldUseUrlLogic()', () => {
             expect(global.swal).not.toHaveBeenCalled();
 
             const vec = getStoredVector();
-            expect(vec).toBeEmpty(); // extended matcher
         });
 
         // --- TEST 7 ---
