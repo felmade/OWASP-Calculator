@@ -506,7 +506,7 @@ describe('shouldUseUrlLogic()', () => {
                 const expectedUrl =
                     window.location.origin +
                     window.location.pathname +
-                    "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
+                    "?vector=(SL:1/M:1/O:0/S:2/ED:0/EE:0/A:0/ID:0/LC:0/LI:0/LAV:0/LAC:0/FD:0/RD:0/NC:0/PV:0)";
                 expect(window.location.href).toBe(expectedUrl);
             });
         });
