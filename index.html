@@ -40,6 +40,65 @@
         <div class="risk RS">
             <h4>0</h4>
         </div>
+
+        <!-- Button to open the Mapping Modal -->
+        <button type="button" class="btn btn-info" style="margin-top: 20px;" data-toggle="modal" data-target="#mappingModal">
+            Open Custom Mapping Modal
+        </button>
+
+        <!-- Mapping Modal -->
+        <div class="modal fade" id="mappingModal" tabindex="-1" role="dialog" aria-labelledby="mappingModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="mappingModalLabel">Generate Custom Mapping Matrix</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Custom Mapping Matrix Generator Section -->
+                        <div id="customMappingSection" class="mt-4">
+                            <div class="form-group">
+                                <label for="likelihoodLevelsInput">Number of Likelihood Levels:</label>
+                                <input
+                                        type="number"
+                                        id="likelihoodLevelsInput"
+                                        class="form-control"
+                                        placeholder="Enter a positive integer"
+                                        min="1"
+                                        step="1"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="impactLevelsInput">Number of Impact Levels:</label>
+                                <input
+                                        type="number"
+                                        id="impactLevelsInput"
+                                        class="form-control"
+                                        placeholder="Enter a positive integer"
+                                        min="1"
+                                        step="1"
+                                />
+                            </div>
+                            <button id="generateMappingMatrixBtn" class="btn btn-primary mt-2">
+                                Generate Mapping Matrix
+                            </button>
+                            <!-- Container for the dynamically generated matrix -->
+                            <div id="mappingMatrixContainer" class="mt-4"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </section>
 
     <!-- FIRST -->
