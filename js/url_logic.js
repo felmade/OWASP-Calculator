@@ -1,122 +1,112 @@
 // File: url_logic.js
 
-// Automatically initialize the complete URL when the page loads
-import {config} from "../config.js";
+import { config } from "../config.js";
 
+/* ================================
+   ========== CONSTANTS ===========
+   ================================ */
+
+// Define the allowed vector keys in the desired order.
+const VECTOR_KEYS = [
+    "sl", "m", "o", "s", "ed", "ee", "a", "id",
+    "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
+];
+const ALLOWED_VECTOR_KEYS = new Set(VECTOR_KEYS);
+
+// Default vector values.
+const DEFAULT_VECTOR = {
+    sl: 1, m: 1, o: 0, s: 2, ed: 0, ee: 0, a: 0, id: 0,
+    lc: 0, li: 0, lav: 0, lac: 0, fd: 0, rd: 0, nc: 0, pv: 0
+};
+
+/* ================================
+   ========== EVENT LISTENERS =====
+   ================================ */
+
+// Update the complete URL when the DOM is fully loaded.
 document.addEventListener("DOMContentLoaded", updateCompleteURL);
+// Initialize vector update listeners on DOM load.
+document.addEventListener("DOMContentLoaded", initializeVectorUpdate);
 
-/**
- * =====================================
- * ========== INTERNAL STORAGE ==========
- * =====================================
- *
- * This is where the parsed data is stored:
- * - likelihoodConfigObj, impactConfigObj, ...
- * - storedVector: { sl: number, m: number, ...} (optional)
- *   => This is updated with each calculation
- *      so that new UI inputs flow into the calculation.
- */
+/* ================================
+   ========== EXPORT VARIABLES =====
+   ================================ */
 
+// Storage for parsed configuration and calculation data.
 export let likelihoodConfigObj = {};
 export let impactConfigObj = {};
 export let likelihoodLevels = [];
 export let impactLevels = [];
 export let mappingObj = {};
-export let storedVector = {
-    "sl": 1, "m": 1, "o": 0, "s": 2, "ed": 0, "ee": 0, "a": 0, "id": 0,
-    "lc": 0, "li": 0, "lav": 0, "lac": 0, "fd": 0, "rd": 0, "nc": 0, "pv": 0
-};
+export let storedVector = { ...DEFAULT_VECTOR };
+
+/* ============================================
+   ========== STEP 1: URL LOGIC CHECK =========
+   ============================================
+*/
 
 /**
- * 16 fields allowed in the vector.
- */
-const ALLOWED_VECTOR_KEYS = new Set([
-    "sl", "m", "o", "s", "ed", "ee", "a", "id",
-    "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
-]);
-
-/**
- * List of all UI factor IDs,
- * so that on each calculation call
- * the storedVector can be synchronized with the UI.
- */
-const PARTIALS = [
-    "sl", "m", "o", "s", "ed", "ee", "a", "id",
-    "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
-];
-
-/**
- * =====================================
- * ============= STEP 1 ================
- * =====================================
- * Check whether "URL Logic" is used.
- * => checkRequiredParameters()
+ * Checks if URL logic should be used by ensuring all required parameters are present.
+ * @returns {boolean} true if required parameters exist; false otherwise.
  */
 export function shouldUseUrlLogic() {
     return checkRequiredParameters();
 }
 
+/* ============================================
+   ========== STEP 2: PARSE URL PARAMETERS =====
+   ============================================
+*/
+
 /**
- * =====================================
- * ============= STEP 2 ================
- * =====================================
- * Parse URL parameters:
- * - likelihoodConfig
- * - impactConfig
- * - mapping
- * - vector (optional)
- *
- * If OK => fill variables, return true.
- * If Error => fallback => return false.
+ * Parses URL parameters: likelihoodConfig, impactConfig, mapping, and vector (optional).
+ * On success, updates the exported variables and returns true.
+ * On error, falls back to default configuration and returns false.
+ * @returns {boolean}
  */
 export function parseUrlParameters() {
     try {
-        const likelihoodConfigStr = getUrlParameter('likelihoodConfig');
-        const impactConfigStr = getUrlParameter('impactConfig');
-        const mappingStr = getUrlParameter('mapping');
-        const vectorParam = getUrlParameter('vector');
+        const likelihoodConfigStr = getUrlParameter("likelihoodConfig");
+        const impactConfigStr = getUrlParameter("impactConfig");
+        const mappingStr = getUrlParameter("mapping");
+        const vectorParam = getUrlParameter("vector");
 
-        // 1) parse L & I config
+        // 1) Parse likelihood and impact configuration strings.
         likelihoodConfigObj = parseConfiguration(likelihoodConfigStr);
         impactConfigObj = parseConfiguration(impactConfigStr);
 
-        // 2) Create level arrays (sorted by minVal)
+        // 2) Create level arrays (sorted by minimum value).
         likelihoodLevels = configObjToSortedLevels(likelihoodConfigObj);
         impactLevels = configObjToSortedLevels(impactConfigObj);
 
-        // 3) Mapping NxM
+        // 3) Parse NxM mapping.
         mappingObj = parseNxMMapping(likelihoodLevels, impactLevels, mappingStr);
 
-        // 4) Vector (optional)
-        if (vectorParam) {
-            storedVector = parseVector(vectorParam);
-        } else {
-            storedVector = {
-                "sl": 1, "m": 1, "o": 0, "s": 2, "ed": 0, "ee": 0, "a": 0, "id": 0,
-                "lc": 0, "li": 0, "lav": 0, "lac": 0, "fd": 0, "rd": 0, "nc": 0, "pv": 0
-            };
-        }
+        // 4) Parse optional vector parameter or use default.
+        storedVector = vectorParam ? parseVector(vectorParam) : { ...DEFAULT_VECTOR };
 
         console.log("[URL_LOGIC] parseUrlParameters() OK", {
             likelihoodConfigObj,
             impactConfigObj,
             mappingObj,
-            storedVector
+            storedVector,
         });
-
         return true;
     } catch (err) {
         console.error("[URL_LOGIC] parseUrlParameters() error:", err);
-        if (typeof swal === 'function') {
+        if (typeof swal === "function") {
             swal({
                 title: "Parsing Error",
                 text: "Parsing failed. Default configuration will be used.",
                 icon: "error",
-                button: "OK"
+                button: "OK",
             }).then((willProceed) => {
                 if (willProceed) {
-                    const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
-                    window.location.href = window.location.origin + window.location.pathname + defaultVector;
+                    const defaultVector = `?vector=(${VECTOR_KEYS
+                        .map((key) => `${key.toUpperCase()}:${DEFAULT_VECTOR[key]}`)
+                        .join("/")})`;
+                    window.location.href =
+                        window.location.origin + window.location.pathname + defaultVector;
                 }
             });
         }
@@ -124,21 +114,24 @@ export function parseUrlParameters() {
     }
 }
 
+/* ============================================
+   ========== STEP 3: ADVANCED CALCULATION ======
+   ============================================
+*/
+
 /**
- * =====================================
- * ============= STEP 3 ================
- * =====================================
- * Advanced Calculation:
- * 1) syncStoredVectorFromUI()
- * 2) Calculate L & I (Scores)
- * 3) Mapping => finalRisk
- * 4) UI update (LS, IS, RS)
+ * Performs the advanced calculation:
+ * 1) Synchronizes the stored vector with the UI.
+ * 2) Calculates likelihood (L) and impact (I) scores.
+ * 3) Determines the final risk via mapping.
+ * 4) Updates the UI with the calculated values.
+ * @returns {object|null} Object containing scores and classifications or null on failure.
  */
 export function performAdvancedCalculation() {
-    // (0) UI -> storedVector
+    // (0) Synchronize UI inputs with storedVector.
     syncStoredVectorFromUI();
 
-    // Check if we have config + mapping
+    // Ensure configurations and mapping exist.
     if (!Object.keys(likelihoodConfigObj).length || !Object.keys(impactConfigObj).length) {
         console.error("No config objects found - can't proceed.");
         return null;
@@ -148,91 +141,87 @@ export function performAdvancedCalculation() {
         return null;
     }
 
-    // 1) L_score, I_score from storedVector
+    // 1) Calculate L_score and I_score.
     let L_score = 0;
     let I_score = 0;
 
     if (storedVector) {
-        // Threat fields => average
+        // Calculate average for threat fields.
         const threatKeys = ["sl", "m", "o", "s", "ed", "ee", "a", "id"];
         L_score = averageVector(storedVector, threatKeys);
 
-        // Impact fields => max
+        // Calculate maximum for impact fields.
         const impactKeys = ["lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"];
         I_score = maxVector(storedVector, impactKeys);
     } else {
-        console.warn("[performAdvancedCalculation] No vector => using 0 for L&I");
+        console.warn("[performAdvancedCalculation] No vector available; using 0 for L & I.");
     }
 
-    // 2) Determine L_class, I_class
+    // 2) Determine classifications for likelihood and impact.
     const L_class = getRangeClass(L_score, likelihoodConfigObj);
     const I_class = getRangeClass(I_score, impactConfigObj);
 
-    // 3) Mapping => finalRisk
+    // 3) Map the classifications to final risk.
     const finalRisk = getMappedRisk(L_class, I_class);
 
-    // 4) UI update (LS,IS,RS)
-    const LSElem = document.querySelector('.LS');
+    // 4) Update UI elements.
+    const LSElem = document.querySelector(".LS");
     if (LSElem) {
         LSElem.textContent = `${L_score.toFixed(3)} ${L_class}`;
-        LSElem.style.fontWeight = 'bold';
-        LSElem.style.fontSize = '24px';
+        LSElem.style.fontWeight = "bold";
+        LSElem.style.fontSize = "24px";
     }
 
-    const ISElem = document.querySelector('.IS');
+    const ISElem = document.querySelector(".IS");
     if (ISElem) {
         ISElem.textContent = `${I_score.toFixed(3)} ${I_class}`;
-        ISElem.style.fontWeight = 'bold';
-        ISElem.style.fontSize = '24px';
+        ISElem.style.fontWeight = "bold";
+        ISElem.style.fontSize = "24px";
     }
 
-    const RSElem = document.querySelector('.RS');
+    const RSElem = document.querySelector(".RS");
     if (RSElem) {
         RSElem.textContent = finalRisk;
-        RSElem.style.fontWeight = 'bold';
-        RSElem.style.fontSize = '24px';
+        RSElem.style.fontWeight = "bold";
+        RSElem.style.fontSize = "24px";
     }
 
-    const result = {L_score, I_score, L_class, I_class, finalRisk};
+    const result = { L_score, I_score, L_class, I_class, finalRisk };
     console.log("[performAdvancedCalculation] done:", result);
     return result;
 }
 
-/**
- * Reads the 16 input fields (#sl, #m, #o, #s, ...)
- * and updates storedVector accordingly,
- * so that any changed values are used in the calculation.
- */
-function syncStoredVectorFromUI() {
-    PARTIALS.forEach(key => {
-        const el = document.getElementById(key);
-        if (!el) return;
-        storedVector[key] = parseFloat(el.value) || 0;
-    });
-}
-
-/* ===========================================
-   ========== HELPER FUNCTIONS ===============
-   ===========================================
+/* ============================================
+   ========== UI AND VECTOR SYNC ===============
+   ============================================
 */
 
 /**
- * Initializes event listeners for all input fields in PARTIALS
- * and updates the VECTOR field in the UI whenever a value changes.
+ * Reads input fields corresponding to VECTOR_KEYS and updates storedVector.
+ */
+function syncStoredVectorFromUI() {
+    VECTOR_KEYS.forEach((key) => {
+        const el = document.getElementById(key);
+        if (el) {
+            storedVector[key] = parseFloat(el.value) || 0;
+        }
+    });
+}
+
+/**
+ * Initializes event listeners for all vector input fields.
+ * Updates the stored vector, vector display, and complete URL on input change.
  */
 export function initializeVectorUpdate() {
-    // Add input event listeners for all partial fields
-    PARTIALS.forEach(key => {
-        key = key.toLowerCase();
+    VECTOR_KEYS.forEach((key) => {
         const inputElement = document.getElementById(key);
         if (inputElement) {
-            inputElement.addEventListener('input', () => {
-                // (1) Update the stored vector with the current input value
+            inputElement.addEventListener("input", () => {
+                // Update storedVector with the current input value.
                 storedVector[key] = parseFloat(inputElement.value) || 0;
 
-                // (2) Update the VECTOR in the UI
+                // Update the vector display and complete URL.
                 updateVectorDisplay();
-
                 updateCompleteURL();
             });
         } else {
@@ -242,29 +231,24 @@ export function initializeVectorUpdate() {
 }
 
 /**
- * Updates the VECTOR field (href and text) in the UI
- * based on the current values in storedVector.
+ * Updates the vector display element based on the current storedVector.
+ * The vector string is built using the order defined in VECTOR_KEYS.
  */
 function updateVectorDisplay() {
-    const vectorElement = document.getElementById('score');
+    const vectorElement = document.getElementById("score");
     if (vectorElement) {
-        // (1) Build the vector string from storedVector
-        const vectorString = Object.keys(storedVector)
-            .map(key => `${key.toUpperCase()}:${storedVector[key]}`)
-            .join('/');
-
-        // (2) Update the href and text content of the VECTOR field
+        const vectorString = VECTOR_KEYS.map((key) => `${key.toUpperCase()}:${storedVector[key]}`).join("/");
         vectorElement.href = `${config.baseUrl}?vector=${vectorString}`;
         vectorElement.textContent = `(${vectorString})`;
     }
 }
 
 /**
- * Updates the Complete-URL field.
+ * Updates the complete URL element in the UI based on the current URL parameters and storedVector.
  */
 export function updateCompleteURL() {
-    const completeURLDiv = document.querySelector('.completeURL');
-    const completeURLElement = document.getElementById('completeURL');
+    const completeURLDiv = document.querySelector(".completeURL");
+    const completeURLElement = document.getElementById("completeURL");
 
     if (!completeURLDiv || !completeURLElement) {
         console.error("[ERROR] Could not find .completeURL div or #completeURL element.");
@@ -272,95 +256,99 @@ export function updateCompleteURL() {
     }
 
     try {
-
         const urlParams = new URLSearchParams(window.location.search);
-        const likelihoodConfig = urlParams.get('likelihoodConfig');
-        const impactConfig = urlParams.get('impactConfig');
-        const mappingConfig = urlParams.get('mapping');
+        const likelihoodConfig = urlParams.get("likelihoodConfig");
+        const impactConfig = urlParams.get("impactConfig");
+        const mappingConfig = urlParams.get("mapping");
 
-        const vectorString = "(" + Object.keys(storedVector)
-            .map(key => `${key.toUpperCase()}:${storedVector[key]}`)
-            .join("/") + ")";
+        const vectorString = `(${VECTOR_KEYS.map((key) => `${key.toUpperCase()}:${storedVector[key]}`).join("/")})`;
 
-        // (2) Komplette URL zusammensetzen
+        // Assemble the complete URL.
         let completeURL = config.baseUrl;
-
         if (!likelihoodConfig && !impactConfig && !mappingConfig) {
-            // Keine Config => Nur ?vector=...
+            // No config parameters present: use only vector.
             completeURL += `?vector=${vectorString}`;
         } else {
-            completeURL += `?likelihoodConfig=${likelihoodConfig}`
-                + `&impactConfig=${impactConfig}`
-                + `&mapping=${mappingConfig}`
-                + `&vector=${vectorString}`;
+            completeURL += `?likelihoodConfig=${likelihoodConfig}&impactConfig=${impactConfig}&mapping=${mappingConfig}&vector=${vectorString}`;
         }
 
         completeURLElement.href = completeURL;
         completeURLElement.textContent = completeURL;
-
     } catch (error) {
         console.error("[ERROR] Exception in updateCompleteURL:", error);
     }
 }
 
+/* ============================================
+   ========== HELPER FUNCTIONS ================
+   ============================================
+*/
+
 /**
- * parseConfiguration("LOW:0-2;MEDIUM:2-5;HIGH:5-9")
- * => { LOW:[0,2], MEDIUM:[2,5], HIGH:[5,9] }
+ * Parses a configuration string (e.g., "LOW:0-2;MEDIUM:2-5;HIGH:5-9")
+ * and returns an object mapping level names to numeric ranges.
+ * @param {string} str - The configuration string.
+ * @returns {object}
+ * @throws Will throw an error if the string is invalid.
  */
 function parseConfiguration(str) {
-    if (!str) throw new Error("No config string provided.");
-    const parts = str.split(';');
+    if (!str) throw new Error("No configuration string provided.");
+    const parts = str.split(";");
     const obj = {};
-    parts.forEach(part => {
+    parts.forEach((part) => {
         const trimmed = part.trim();
         if (!trimmed) return;
-        const [levelRaw, rangeRaw] = trimmed.split(':');
+        const [levelRaw, rangeRaw] = trimmed.split(":");
         if (!levelRaw || !rangeRaw) {
-            throw new Error("Invalid config part: " + part);
+            throw new Error("Invalid configuration segment: " + part);
         }
-        const [minStr, maxStr] = rangeRaw.split('-');
+        const [minStr, maxStr] = rangeRaw.split("-");
         const minVal = parseFloat(minStr);
         const maxVal = parseFloat(maxStr);
         if (isNaN(minVal) || isNaN(maxVal)) {
-            throw new Error("Invalid numeric range in " + part);
+            throw new Error("Invalid numeric range in segment: " + part);
         }
         obj[levelRaw.trim().toUpperCase()] = [minVal, maxVal];
     });
     if (!Object.keys(obj).length) {
-        throw new Error("Empty config object from: " + str);
+        throw new Error("Empty configuration object derived from: " + str);
     }
     return obj;
 }
 
 /**
- * Converts e.g. { LOW:[0,2], MEDIUM:[2,4], HIGH:[4,6] }
- * into an array ["LOW","MEDIUM","HIGH"] (sorted by minVal).
+ * Converts a configuration object (e.g., {LOW:[0,2], MEDIUM:[2,4], HIGH:[4,6]})
+ * into an array of levels sorted by the minimum value.
+ * @param {object} configObj
+ * @returns {string[]} Sorted array of level names.
  */
 function configObjToSortedLevels(configObj) {
     const tempArr = [];
     for (const level in configObj) {
         const [minVal, maxVal] = configObj[level];
-        tempArr.push({level, minVal, maxVal});
+        tempArr.push({ level, minVal, maxVal });
     }
-    // Sort by minVal
     tempArr.sort((a, b) => a.minVal - b.minVal);
-    return tempArr.map(item => item.level);
+    return tempArr.map((item) => item.level);
 }
 
 /**
- * parseNxMMapping(likelihoodLevels, impactLevels, mappingStr)
- * => Key: "LIKELIHOOD-IMPACT"
+ * Parses an NxM mapping string into a mapping object.
+ * The mapping keys are formed by "LIKELIHOOD-IMPACT" (both in uppercase).
+ * @param {string[]} lLevels - Array of likelihood levels.
+ * @param {string[]} iLevels - Array of impact levels.
+ * @param {string} shortStr - The mapping string (comma-separated values).
+ * @returns {object} Mapping object.
+ * @throws Will throw an error if the mapping string does not have the correct number of entries.
  */
 function parseNxMMapping(lLevels, iLevels, shortStr) {
     if (!shortStr) throw new Error("No mapping string provided.");
-
     const N = lLevels.length;
     const M = iLevels.length;
-    const arr = shortStr.split(',').map(s => s.trim());
+    const arr = shortStr.split(",").map((s) => s.trim());
     if (arr.length !== N * M) {
-        throw new Error(`Need exactly ${N * M} mapping entries, but got ${arr.length}`);
+        throw new Error(`Expected ${N * M} mapping entries, but got ${arr.length}.`);
     }
-
     let index = 0;
     const mapObj = {};
     for (let l = 0; l < N; l++) {
@@ -374,58 +362,57 @@ function parseNxMMapping(lLevels, iLevels, shortStr) {
 }
 
 /**
- * parseVector("(sl:1/m:2/o:3/...)")
- * => { sl:1, m:2, o:3, ... } (only the 16 ALLOWED_VECTOR_KEYS)
+ * Parses a vector string (e.g., "(sl:1/m:2/o:3/...)")
+ * and returns an object containing only the allowed vector keys.
+ * @param {string} str - The vector string.
+ * @returns {object} Parsed vector object.
+ * @throws Will throw an error if the vector string is invalid.
  */
 function parseVector(str) {
-    const clean = str.replace(/^\(/, '').replace(/\)$/, '');
-    const segments = clean.split('/');
+    const clean = str.replace(/^\(/, "").replace(/\)$/, "");
+    const segments = clean.split("/");
     if (!segments.length) {
-        throw new Error("Empty vector string");
+        throw new Error("Empty vector string.");
     }
-    // init result with 0 for allowed keys
+    // Initialize result with zeros for all allowed keys.
     const vecObj = {};
-    ALLOWED_VECTOR_KEYS.forEach(k => {
+    ALLOWED_VECTOR_KEYS.forEach((k) => {
         vecObj[k] = 0;
     });
-
-    segments.forEach(seg => {
-        const [keyRaw, valRaw] = seg.split(':');
+    segments.forEach((seg) => {
+        const [keyRaw, valRaw] = seg.split(":");
         if (!keyRaw || valRaw === undefined) {
             throw new Error("Invalid vector segment: " + seg);
         }
         const key = keyRaw.trim().toLowerCase();
         const valNum = parseFloat(valRaw.trim());
         if (isNaN(valNum)) {
-            throw new Error("NaN in vector segment: " + seg);
+            throw new Error("Non-numeric value in vector segment: " + seg);
         }
         if (valNum < 0 || valNum > 9) {
-            throw new Error(`Invalid vector range (0..9) in segment: ${seg}`);
+            throw new Error(`Vector value out of range (0-9) in segment: ${seg}`);
         }
         if (ALLOWED_VECTOR_KEYS.has(key)) {
             vecObj[key] = valNum;
         } else {
-            console.warn(`[parseVector] ignoring unknown key "${key}"`);
+            console.warn(`[parseVector] Ignoring unknown key "${key}".`);
         }
     });
-
     return vecObj;
 }
 
 /**
- * Determines the level (e.g. "LOW") by looking up
- * in configObj[level] = [min,max].
+ * Determines the classification for a given value based on the configuration ranges.
+ * For normal cases, a value is classified if it is >= min and < max.
+ * Special handling: if value is exactly 9 and the range's max is 9.
+ * @param {number} value - The value to classify.
+ * @param {object} configObj - Configuration object mapping levels to ranges.
+ * @returns {string} The level (e.g., "LOW", "MEDIUM") or "ERROR" if none match.
  */
 export function getRangeClass(value, configObj) {
     for (const level in configObj) {
         const [minVal, maxVal] = configObj[level];
-
-        // Normal case: [minVal, maxVal) => >= minVal && < maxVal
-        // Additional hack: EXACT 9 => maxVal===9 => assign
-        if (
-            (value >= minVal && value < maxVal) ||
-            (value === 9 && maxVal === 9)
-        ) {
+        if ((value >= minVal && value < maxVal) || (value === 9 && maxVal === 9)) {
             return level;
         }
     }
@@ -433,7 +420,10 @@ export function getRangeClass(value, configObj) {
 }
 
 /**
- * mappingObj[L_class-I_class] => finalRisk
+ * Retrieves the final risk mapping based on likelihood and impact classifications.
+ * @param {string} L_class - Likelihood classification.
+ * @param {string} I_class - Impact classification.
+ * @returns {string} Mapped risk or "ERROR" if mapping is invalid.
  */
 export function getMappedRisk(L_class, I_class) {
     if (L_class === "ERROR" || I_class === "ERROR") {
@@ -444,18 +434,18 @@ export function getMappedRisk(L_class, I_class) {
 }
 
 /**
- * checkRequiredParameters():
- * => if ?likelihoodConfig=..., ?impactConfig=..., ?mapping=...
- *    all present => true
- * => otherwise => fallback => false
+ * Checks if the required URL parameters (likelihoodConfig, impactConfig, mapping)
+ * are present. If some are missing, a warning is shown and a fallback to default
+ * configuration is initiated.
+ * @returns {boolean} true if all required parameters are present; false otherwise.
  */
 function checkRequiredParameters() {
-    const requiredParams = ['likelihoodConfig', 'impactConfig', 'mapping'];
+    const requiredParams = ["likelihoodConfig", "impactConfig", "mapping"];
     const missingParams = [];
     let foundParams = 0;
 
-    requiredParams.forEach(param => {
-        const regex = new RegExp('[\\?&]' + param + '=([^&#]*)');
+    requiredParams.forEach((param) => {
+        const regex = new RegExp("[\\?&]" + param + "=([^&#]*)");
         const results = regex.exec(window.location.search);
         if (!results) {
             missingParams.push(param);
@@ -464,22 +454,27 @@ function checkRequiredParameters() {
         }
     });
 
-    // No parameters => fallback
+    // If no parameters are present, return false.
     if (foundParams === 0) {
         return false;
     }
 
-    // 1 or 2 missing => warning
+    // If some (but not all) parameters are missing, show a warning and fallback.
     if (missingParams.length > 0 && missingParams.length < requiredParams.length) {
         swal({
             title: "Missing Parameters",
-            text: `The following parameters are missing: ${missingParams.join(', ')}. Default configuration will be used.`,
+            text: `The following parameters are missing: ${missingParams.join(
+                ", "
+            )}. Default configuration will be used.`,
             icon: "warning",
-            button: "OK"
+            button: "OK",
         }).then((willProceed) => {
             if (willProceed) {
-                const defaultVector = "?vector=(sl:1/m:1/o:0/s:2/ed:0/ee:0/a:0/id:0/lc:0/li:0/lav:0/lac:0/fd:0/rd:0/nc:0/pv:0)";
-                window.location.href = window.location.origin + window.location.pathname + defaultVector;
+                const defaultVector = `?vector=(${VECTOR_KEYS
+                    .map((key) => `${key.toUpperCase()}:${DEFAULT_VECTOR[key]}`)
+                    .join("/")})`;
+                window.location.href =
+                    window.location.origin + window.location.pathname + defaultVector;
             }
         });
         return false;
@@ -489,37 +484,44 @@ function checkRequiredParameters() {
 }
 
 /**
- * Average over given keys (e.g. threatKeys) in storedVector
+ * Calculates the average of the vector values for the specified keys.
+ * @param {object} vec - The vector object.
+ * @param {string[]} keys - The keys to average.
+ * @returns {number} The average value.
  */
 export function averageVector(vec, keys) {
-    let sum = 0, count = 0;
-    keys.forEach(k => {
-        if (typeof vec[k] === 'number') {
+    let sum = 0,
+        count = 0;
+    keys.forEach((k) => {
+        if (typeof vec[k] === "number") {
             sum += vec[k];
             count++;
         }
     });
-    if (!count) return 0;
-    return sum / count;
+    return count ? sum / count : 0;
 }
 
 /**
- * Max over given keys (e.g. impactKeys) in storedVector
+ * Calculates the maximum value among the specified keys in the vector.
+ * @param {object} vec - The vector object.
+ * @param {string[]} keys - The keys to check.
+ * @returns {number} The maximum value.
  */
 export function maxVector(vec, keys) {
     let maxVal = Number.NEGATIVE_INFINITY;
-    keys.forEach(k => {
+    keys.forEach((k) => {
         const v = vec[k];
-        if (typeof v === 'number' && v > maxVal) {
+        if (typeof v === "number" && v > maxVal) {
             maxVal = v;
         }
     });
-    if (maxVal === Number.NEGATIVE_INFINITY) return 0;
-    return maxVal;
+    return maxVal === Number.NEGATIVE_INFINITY ? 0 : maxVal;
 }
 
 /**
- * Extract URL parameter
+ * Extracts a parameter value from the URL query string.
+ * @param {string} name - The name of the parameter.
+ * @returns {string|null} The decoded parameter value or null if not found.
  */
 export function getUrlParameter(name) {
     name = name.replace(/[\[\]]/g, "\\$&");
@@ -530,28 +532,34 @@ export function getUrlParameter(name) {
     return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-/**
-* This ensures that the vector updater functionality
-* is initialized once the DOM is fully loaded.
+/* ============================================
+   ========== EXTERNAL GETTERS ================
+   ============================================
 */
-document.addEventListener('DOMContentLoaded', () => {
-    initializeVectorUpdate();
-});
 
 /**
- * Getter functions, in case you need them externally
+ * Returns the stored configuration objects.
+ * @returns {object} Object with likelihood and impact configurations.
  */
 export function getStoredConfiguration() {
     return {
         likelihood: likelihoodConfigObj,
-        impact: impactConfigObj
+        impact: impactConfigObj,
     };
 }
 
+/**
+ * Returns the stored mapping object.
+ * @returns {object}
+ */
 export function getStoredMapping() {
     return mappingObj;
 }
 
+/**
+ * Returns the current stored vector.
+ * @returns {object}
+ */
 export function getStoredVector() {
     return storedVector;
 }
