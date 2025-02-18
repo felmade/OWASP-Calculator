@@ -1,3 +1,5 @@
+export let FINAL_QUERY_STRING = "";
+
 export function initMappingMatrixGenerator() {
     // Set up the event listener for the "Generate Mapping Matrix" button within the modal
     const generateMappingMatrixBtn = document.getElementById("generateMappingMatrixBtn");
@@ -57,7 +59,7 @@ export function initMappingMatrixGenerator() {
             const rowHeaderInput = document.createElement("input");
             rowHeaderInput.type = "text";
             rowHeaderInput.className = "form-control custom-row-header";
-            // Default value "Likelihood X" (user can edit, e.g., "LOW:0-2")
+            // Default value "Likelihood X" (user can edit it, e.g., to "LOW:0-3")
             rowHeaderInput.value = "Likelihood " + (i + 1);
             rowHeaderCell.appendChild(rowHeaderInput);
             row.appendChild(rowHeaderCell);
@@ -82,35 +84,60 @@ export function initMappingMatrixGenerator() {
         table.appendChild(tbody);
         container.appendChild(table);
 
-        // --- Here is where you replace the existing confirm button event listener with the new validation code ---
+        // Create the confirm button that generates the final query string
         const confirmBtn = document.createElement("button");
         confirmBtn.className = "btn btn-success mt-2 mb-3";
         confirmBtn.innerText = "Confirm Mapping";
         confirmBtn.addEventListener("click", function () {
             const mappingValues = [];
-            const rangeRegex = /^[^:]+:\d+-\d+$/; // Expected format: e.g. "LOW:0-1"
             let allValid = true;
+            // Regex for header validation: expected format, e.g. "LOW:0-1"
+            const headerRegex = /^[^:]+:\d+-\d+$/;
 
-            // Iterate through the matrix cells to retrieve the mapping input values
+            // Validate row header inputs
+            const rowHeaderInputs = document.querySelectorAll("input.custom-row-header");
+            for (let index = 0; index < rowHeaderInputs.length; index++) {
+                const val = rowHeaderInputs[index].value.trim();
+                if (!val) {
+                    alert(`Row header ${index + 1} is empty.`);
+                    allValid = false;
+                    break;
+                }
+                if (!headerRegex.test(val)) {
+                    alert(`Row header ${index + 1} ("${val}") is invalid. Expected format: "Text:0-1".`);
+                    allValid = false;
+                    break;
+                }
+            }
+            if (!allValid) return;
+
+            // Validate column header inputs
+            const colHeaderInputs = document.querySelectorAll("input.custom-col-header");
+            for (let index = 0; index < colHeaderInputs.length; index++) {
+                const val = colHeaderInputs[index].value.trim();
+                if (!val) {
+                    alert(`Column header ${index + 1} is empty.`);
+                    allValid = false;
+                    break;
+                }
+                if (!headerRegex.test(val)) {
+                    alert(`Column header ${index + 1} ("${val}") is invalid. Expected format: "Text:0-1".`);
+                    allValid = false;
+                    break;
+                }
+            }
+            if (!allValid) return;
+
+            // Validate mapping cells: only check that they are filled
             for (let i = 0; i < numLikelihood; i++) {
                 for (let j = 0; j < numImpact; j++) {
                     const input = document.querySelector(`input.mapping-input[data-row="${i}"][data-col="${j}"]`);
                     let value = input ? input.value.trim() : "";
-
-                    // Check if the field is filled
                     if (!value) {
                         alert(`Mapping field at row ${i + 1}, column ${j + 1} is empty.`);
                         allValid = false;
                         break;
                     }
-
-                    // Check if the field matches the expected format
-                    if (!rangeRegex.test(value)) {
-                        alert(`Mapping field at row ${i + 1}, column ${j + 1} has an invalid format. Expected format: "Text:0-1".`);
-                        allValid = false;
-                        break;
-                    }
-
                     mappingValues.push(value);
                 }
                 if (!allValid) break;
@@ -118,10 +145,28 @@ export function initMappingMatrixGenerator() {
 
             if (!allValid) return; // Stop processing if validation failed
 
-            // Create a comma-separated string of mapping values
-            const mappingString = mappingValues.join(",");
-            alert("Mapping confirmed: " + mappingString);
-            // Further processing (e.g., adding to URL parameters) can be done here.
+            // Get header values from input fields
+            const likelihoodLevels = [];
+            const impactLevels = [];
+            rowHeaderInputs.forEach(input => {
+                likelihoodLevels.push(input.value.trim());
+            });
+            colHeaderInputs.forEach(input => {
+                impactLevels.push(input.value.trim());
+            });
+
+            // Build the final query string in the desired format:
+            // likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=Val1,Val2,...
+            const likelihoodConfigString = likelihoodLevels.join(";");
+            const impactConfigString = impactLevels.join(";");
+            const mappingStringFinal = mappingValues.join(",");
+
+            // Final Query String stored in the exported variable
+            const finalQueryString = `likelihoodConfig=${likelihoodConfigString}&impactConfig=${impactConfigString}&mapping=${mappingStringFinal}`;
+            FINAL_QUERY_STRING = finalQueryString;
+
+            alert("Final Query String:\n" + FINAL_QUERY_STRING);
+            return finalQueryString;
         });
         container.appendChild(confirmBtn);
     });
