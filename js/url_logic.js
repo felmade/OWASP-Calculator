@@ -439,7 +439,7 @@ export function getMappedRisk(L_class, I_class) {
  * configuration is initiated.
  * @returns {boolean} true if all required parameters are present; false otherwise.
  */
-function checkRequiredParameters() {
+export function checkRequiredParameters() {
     const requiredParams = ["likelihoodConfig", "impactConfig", "mapping"];
     const missingParams = [];
     let foundParams = 0;

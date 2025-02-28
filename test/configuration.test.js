@@ -171,7 +171,7 @@ describe('updateRiskLevelMapping() with testMode enabled', () => {
 
     // Before all tests => ensure "URL Configuration" exists
     beforeAll(() => {
-        riskConfigurations['URL Configuration'] = {
+        riskConfigurations['Custom Configuration'] = {
             LOW: [0, 2],
             MEDIUM: [2, 5],
             HIGH: [5, 9],

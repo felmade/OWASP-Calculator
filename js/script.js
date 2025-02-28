@@ -21,9 +21,9 @@ import {
 import {config} from '../config.js';
 import {initMappingMatrixGenerator} from "./customMappingButton.js";
 
+document.addEventListener("DOMContentLoaded", initMappingMatrixGenerator);
 document.addEventListener("DOMContentLoaded", calculate);
 document.addEventListener("DOMContentLoaded", updateCompleteURL);
-document.addEventListener("DOMContentLoaded", initMappingMatrixGenerator);
 
 /**
  * CANVAS / CHART.JS
@@ -137,57 +137,57 @@ const riskChartOptions = {
  * 5) First call of calculate().
  */
 document.addEventListener("DOMContentLoaded", () => {
-    // 1) Chart init
-    riskChartElement = document.getElementById("riskChart");
-    riskChartCtx = riskChartElement ? riskChartElement.getContext("2d") : null;
+        // 1) Chart init
+        riskChartElement = document.getElementById("riskChart");
+        riskChartCtx = riskChartElement ? riskChartElement.getContext("2d") : null;
 
-    if (riskChartCtx) {
-        riskChart = new Chart(riskChartCtx, {
-            type: "radar",
-            data: {
-                labels: threats,
-                datasets: [{
-                    data: [],
-                    pointBackgroundColor: "",
-                    backgroundColor: "",
-                    borderColor: "",
-                    borderWidth: 2
-                }]
-            },
-            options: riskChartOptions
-        });
-    }
-
-    // 2) Dropdown => onChange => calculate
-    const configSelect = document.getElementById("configurationSelect");
-    if (configSelect) {
-        configSelect.addEventListener("change", () => {
-            calculate();
-        });
-    }
-
-    // 3) vector in URL?
-    if (!getUrlParameter("vector")) {
-        loadVectors();
-    } else {
-        loadVectors(getUrlParameter("vector"));
-    }
-
-
-    // 4) Inputs => onChange => calculate
-    partials.forEach(factor => {
-        const element = document.getElementById(factor);
-        if (element) {
-            element.addEventListener("change", () => {
-                calculate();
-                updateURLInAddressBar();
+        if (riskChartCtx) {
+            riskChart = new Chart(riskChartCtx, {
+                type: "radar",
+                data: {
+                    labels: threats,
+                    datasets: [{
+                        data: [],
+                        pointBackgroundColor: "",
+                        backgroundColor: "",
+                        borderColor: "",
+                        borderWidth: 2
+                    }]
+                },
+                options: riskChartOptions
             });
         }
-    });
 
-    // 5) First call of calculate()
-    calculate();
-});
+        // 2) Dropdown => onChange => calculate
+        const configSelect = document.getElementById("configurationSelect");
+        if (configSelect) {
+            configSelect.addEventListener("change", () => {
+                calculate();
+            });
+        }
+
+        // Check for "vector" in URL parameters and load vector accordingly
+        const vectorParam = getUrlParameter("vector");
+        if (vectorParam) {
+            loadVectors();
+        }
+
+        // 4) Inputs => onInput => calculate
+        partials.forEach(factor => {
+            const element = document.getElementById(factor);
+            if (element) {
+                element.addEventListener("change", () => {
+                    calculate();
+                    updateURLInAddressBar();
+                });
+            }
+        });
+
+        // 5) First call of calculate()
+        calculate();
+    }
+)
+;
 
 /**
  * EXTERNAL EXPORTS FOR HTML
@@ -293,7 +293,7 @@ function updateURLInAddressBar() {
  * Main calculation: Checks whether URL logic => parseUrlParameters + performAdvancedCalculation
  * or whether we use our fallback configuration.
  */
-export function calculate(){
+export function calculate() {
     if (shouldUseUrlLogic()) {
         console.log("[INFO] We have the correct parameters -> URL-Logic is being used.");
         const parseOk = parseUrlParameters();
