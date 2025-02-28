@@ -12,6 +12,15 @@
 .risk{width: 400px; margin: 0 auto;}
 .riskChart {margin-bottom: 10px;}
 
+main.blurred {
+	filter: blur(5px);
+	transition: filter 0.3s ease;
+}
+
+.modal, .modal-dialog, .modal-content {
+	filter: none !important;
+}
+
 h1 {font-weight: bold;}
 section {padding: 10px;}
 .row {display: flex;}
