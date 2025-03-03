@@ -20,7 +20,8 @@ import {
     likelihoodConfigObj,
     impactConfigObj,
     mappingObj,
-    storedVector
+    storedVector,
+    VECTOR_KEYS, updateVectorDisplay, updateCompleteURL
 } from '../js/url_logic.js';
 
 import {config} from '../config.js';
@@ -1307,6 +1308,104 @@ describe('UI Config Usage', () => {
 
         // Assert
         expect(configSelect.disabled).toBe(false);
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: updateVectorDisplay()
+ * --------------------------------------
+ */
+
+describe('updateVectorDisplay()', () => {
+    let scoreElement;
+
+    beforeEach(() => {
+        document.body.innerHTML = `<a id="score"></a>`;
+        scoreElement = document.getElementById("score");
+
+        VECTOR_KEYS.forEach((key, index) => {
+            storedVector[key] = index % 10;  // Werte von 0 bis 9 zuweisen
+        });
+
+        config.baseUrl = "https://example.com";
+    });
+
+    test('should correctly update the vector display element', () => {
+        updateVectorDisplay();
+
+        const expectedVectorString = VECTOR_KEYS.map(
+            (key, index) => `${key.toUpperCase()}:${index % 10}`
+        ).join("/");
+
+        expect(scoreElement.textContent).toBe(`(${expectedVectorString})`);
+        expect(scoreElement.href).toBe(`https://example.com/?vector=${expectedVectorString}`);
+    });
+
+    test('should handle missing #score element gracefully', () => {
+        document.body.innerHTML = ""; // Entfernen des Elements
+        expect(() => updateVectorDisplay()).not.toThrow();
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: updateCompleteURL()
+ * --------------------------------------
+ */
+
+describe('updateCompleteURL()', () => {
+    let completeURLElement, completeURLDiv;
+
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div class="completeURL">
+                <a id="completeURL"></a>
+            </div>
+        `;
+
+        completeURLDiv = document.querySelector(".completeURL");
+        completeURLElement = document.getElementById("completeURL");
+
+        VECTOR_KEYS.forEach((key, index) => {
+            storedVector[key] = (index + 1) % 10;  // Werte von 1 bis 9
+        });
+
+        config.baseUrl = "https://example.com/";
+        delete window.location;
+        window.location = new URL('https://example.com/');
+    });
+
+    test('should build URL only with vector if no URL params exist', () => {
+        updateCompleteURL();
+
+        const vectorString = VECTOR_KEYS.map(key => `${key.toUpperCase()}:${storedVector[key]}`).join('/');
+        const expectedURL = `${config.baseUrl}?vector=(${vectorString})`;
+
+        expect(completeURLElement.href).toBe(expectedURL);
+        expect(completeURLElement.textContent).toBe(expectedURL);
+    });
+
+    test('should build complete URL including existing parameters', () => {
+        window.location.search = '?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9&impactConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9&mapping=NOTE,LOW,MEDIUM,LOW,MEDIUM,HIGH,MEDIUM,HIGH,CRITICAL';
+
+        updateCompleteURL();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const likelihoodConfig = urlParams.get("likelihoodConfig");
+        const impactConfig = urlParams.get("impactConfig");
+        const mappingConfig = urlParams.get("mapping");
+
+        const vectorString = VECTOR_KEYS.map(key => `${key.toUpperCase()}:${storedVector[key]}`).join('/');
+        const expectedURL = `${config.baseUrl}?likelihoodConfig=${likelihoodConfig}&impactConfig=${impactConfig}&mapping=${mappingConfig}&vector=(${vectorString})`;
+
+        expect(completeURLElement.href).toBe(expectedURL);
+        expect(completeURLElement.textContent).toBe(expectedURL);
+    });
+
+    test('should handle missing .completeURL div or #completeURL element gracefully', () => {
+        document.body.innerHTML = "";
+        expect(() => updateCompleteURL()).not.toThrow();
     });
 });
 

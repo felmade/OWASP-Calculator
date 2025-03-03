@@ -7,7 +7,7 @@ import { config } from "../config.js";
    ================================ */
 
 // Define the allowed vector keys in the desired order.
-const VECTOR_KEYS = [
+export const VECTOR_KEYS = [
     "sl", "m", "o", "s", "ed", "ee", "a", "id",
     "lc", "li", "lav", "lac", "fd", "rd", "nc", "pv"
 ];
@@ -234,7 +234,7 @@ export function initializeVectorUpdate() {
  * Updates the vector display element based on the current storedVector.
  * The vector string is built using the order defined in VECTOR_KEYS.
  */
-function updateVectorDisplay() {
+export function updateVectorDisplay() {
     const vectorElement = document.getElementById("score");
     if (vectorElement) {
         const vectorString = VECTOR_KEYS.map((key) => `${key.toUpperCase()}:${storedVector[key]}`).join("/");
