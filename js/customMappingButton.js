@@ -33,14 +33,14 @@ export function initMappingMatrixGenerator() {
             alert("Please choose at most 5 levels for Likelihood and Impact.");
             return;
         }
-        
+
         // Close the existing Bootstrap modal
         $('#mappingModal').modal('hide');
 
         // Create and display the mapping dialog
         const dialog = createMappingDialog(numLikelihood, numImpact);
         document.body.appendChild(dialog);
-        // >>> NEW CODE: Blur main content when the native dialog is opened
+
         const mainElement = document.querySelector('main');
         if (mainElement) {
             mainElement.classList.add("blurred");
