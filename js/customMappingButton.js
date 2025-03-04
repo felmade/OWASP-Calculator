@@ -2,6 +2,8 @@ import {
     getUrlParameter
 } from "./url_logic.js";
 
+import { calculate } from "./script.js";
+
 /**
  * INITMAPPINGMATRIXGENERATOR()
  * -----------------------------
@@ -233,10 +235,10 @@ function createMappingTable(numLikelihood, numImpact) {
  * then parses the URL parameters and triggers the advanced calculation.
  * @param {string} finalQueryString - The final query string (without leading "?").
  */
-function updateUrlAndProcess(finalQueryString) {
+export function updateUrlAndProcess(finalQueryString) {
     const vectorParam = getUrlParameter("vector");
     const vectorQuery = vectorParam ? `&vector=${encodeURIComponent(vectorParam)}` : "";
-    const newUrl = window.location.origin + window.location.pathname + "?" + finalQueryString;
+    const newUrl = window.location.origin + window.location.pathname + "?" + finalQueryString + vectorQuery;
     window.history.replaceState(null, "", newUrl);
 }
 
@@ -249,7 +251,7 @@ function updateUrlAndProcess(finalQueryString) {
  * @param {number} numImpact - Number of impact levels.
  * @returns {string|null} - Final query string (without leading "?") or null if validation fails.
  */
-function validateDialogInputs(dialog, numLikelihood, numImpact) {
+export function validateDialogInputs(dialog, numLikelihood, numImpact) {
     const headerRegex = /^[^:]+:\d+-\d+$/;
     const mappingValues = [];
 

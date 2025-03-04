@@ -26,6 +26,8 @@ import {
 
 import {config} from '../config.js';
 
+import {updateUrlAndProcess, validateDialogInputs} from '../js/customMappingButton.js'
+
 /**
  * --------------------------------------
  * Extended Matchers for Jest.
@@ -1406,6 +1408,160 @@ describe('updateCompleteURL()', () => {
     test('should handle missing .completeURL div or #completeURL element gracefully', () => {
         document.body.innerHTML = "";
         expect(() => updateCompleteURL()).not.toThrow();
+    });
+});
+
+/**
+ * -----------------------------------------------
+ * TEST SUITE: validateDialogInputs()
+ * -----------------------------------------------
+ */
+
+describe("validateDialogInputs()", () => {
+    let dialog;
+
+    beforeEach(() => {
+        dialog = document.createElement('dialog');
+        document.body.appendChild(dialog);
+    });
+
+    afterEach(() => {
+        document.body.removeChild(dialog);
+    });
+
+    const createInput = (className, value, dataset = {}) => {
+        const input = document.createElement("input");
+        input.className = className;
+        input.value = value;
+        Object.keys(dataset).forEach(key => input.dataset[key] = dataset[key]);
+        dialog.appendChild(input);
+        return input;
+    };
+
+    const setupDialogHeaders = (likelihoodHeaders, impactHeaders) => {
+        likelihoodHeaders.forEach(header => createInput('custom-row-header', header));
+        impactHeaders.forEach(header => createInput('custom-col-header', header));
+    };
+
+    const setupMappingInputs = (numLikelihood, numImpact, fillValue = "MAPPED") => {
+        for (let i = 0; i < numLikelihood; i++) {
+            for (let j = 0; j < numImpact; j++) {
+                createInput('mapping-input', fillValue, {row: i, col: j});
+            }
+        }
+    };
+
+    test("Valid input passes validation", () => {
+        setupDialogHeaders(
+            ["LOW:0-3", "MEDIUM:3-6", "HIGH:6-9"],
+            ["MINOR:0-3", "MAJOR:3-6", "CRITICAL:6-9"]
+        );
+        setupMappingInputs(3, 3);
+
+        const result = validateDialogInputs(dialog, 3, 3);
+        expect(result).toBe("likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=MINOR:0-3;MAJOR:3-6;CRITICAL:6-9&mapping=MAPPED,MAPPED,MAPPED,MAPPED,MAPPED,MAPPED,MAPPED,MAPPED,MAPPED");
+    });
+
+    test("Fails if Likelihood does not start at 0", () => {
+        setupDialogHeaders(
+            ["LOW:1-3", "MEDIUM:3-6", "HIGH:6-9"],
+            ["MINOR:0-3", "MAJOR:3-6", "CRITICAL:6-9"]
+        );
+        setupMappingInputs(3, 3);
+
+        window.alert = jest.fn();
+        const result = validateDialogInputs(dialog, 3, 3);
+        expect(result).toBeNull();
+        expect(window.alert).toHaveBeenCalledWith("Likelihood must start at 0.");
+    });
+
+    test("Fails if Impact does not end at 9", () => {
+        setupDialogHeaders(
+            ["LOW:0-3", "MEDIUM:3-6", "HIGH:6-9"],
+            ["MINOR:0-3", "MAJOR:3-6", "CRITICAL:6-8"]
+        );
+        setupMappingInputs(3, 3);
+
+        window.alert = jest.fn();
+        const result = validateDialogInputs(dialog, 3, 3);
+        expect(result).toBeNull();
+        expect(window.alert).toHaveBeenCalledWith("Impact must end at 9.");
+    });
+
+    test("Fails if Likelihood ranges have gaps", () => {
+        setupDialogHeaders(
+            ["LOW:0-2", "MEDIUM:4-6", "HIGH:6-9"],
+            ["MINOR:0-3", "MAJOR:3-6", "CRITICAL:6-9"]
+        );
+        setupMappingInputs(3, 3);
+
+        window.alert = jest.fn();
+        const result = validateDialogInputs(dialog, 3, 3);
+        expect(result).toBeNull();
+        expect(window.alert).toHaveBeenCalledWith("Likelihood ranges must not have gaps. Please cover every value from 0 to 9 continuously.");
+    });
+
+    test("Fails if header format is invalid", () => {
+        setupDialogHeaders(
+            ["LOW0-3", "MEDIUM:3-6", "HIGH:6-9"],
+            ["MINOR:0-3", "MAJOR:3-6", "CRITICAL:6-9"]
+        );
+        setupMappingInputs(3, 3);
+
+        window.alert = jest.fn();
+        const result = validateDialogInputs(dialog, 3, 3);
+        expect(result).toBeNull();
+        expect(window.alert).toHaveBeenCalledWith('Likelihood header 1 ("LOW0-3") is invalid. Use format \'Label:min-max\' (e.g., \'LOW:0-1\').');
+    });
+
+    test("Fails if any mapping input is empty", () => {
+        setupDialogHeaders(
+            ["LOW:0-3", "MEDIUM:3-6", "HIGH:6-9"],
+            ["MINOR:0-3", "MAJOR:3-6", "CRITICAL:6-9"]
+        );
+        setupMappingInputs(3, 3);
+        dialog.querySelector('input.mapping-input[data-row="1"][data-col="1"]').value = "";
+
+        window.alert = jest.fn();
+        const result = validateDialogInputs(dialog, 3, 3);
+        expect(result).toBeNull();
+        expect(window.alert).toHaveBeenCalledWith("Mapping field at row 2, column 2 is empty.");
+    });
+});
+
+/**
+ * -----------------------------------------------
+ * TEST SUITE: updateUrlAndProcess()
+ * -----------------------------------------------
+ */
+
+describe("updateUrlAndProcess()", () => {
+    beforeEach(() => {
+        delete window.location;
+        window.location = {
+            origin: "http://localhost",
+            pathname: "/test",
+            search: "?vector=SL:1/M:1",
+        };
+
+        window.history.replaceState = jest.fn();
+    });
+
+    test("Updates URL preserving existing vector parameter", () => {
+        const queryString = "likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=MINOR:0-3;MAJOR:3-6;CRITICAL:6-9&mapping=A,B,C,D,E,F,G,H,I";
+
+        updateUrlAndProcess(queryString);
+
+        expect(window.history.replaceState).toHaveBeenCalledWith(null, "", "http://localhost/test?" + queryString + "&vector=SL%3A1%2FM%3A1");
+    });
+
+    test("Updates URL correctly when no vector parameter exists", () => {
+        window.location.search = "";
+        const queryString = "likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=MINOR:0-3;MAJOR:3-6;CRITICAL:6-9&mapping=A,B,C,D,E,F,G,H,I";
+
+        updateUrlAndProcess(queryString);
+
+        expect(window.history.replaceState).toHaveBeenCalledWith(null, "", "http://localhost/test?" + queryString);
     });
 });
 
