@@ -1,4 +1,4 @@
-import { getUrlParameter } from "./url_logic.js";
+import {getUrlParameter, performAdvancedCalculation, updateCompleteURL, updateVectorDisplay} from "./url_logic.js";
 import { calculate } from "./script.js";
 import { setMappingCookie, deleteMappingCookie, listMappingCookies } from "./cookie_utils.js";
 
@@ -276,6 +276,8 @@ export function updateUrlAndProcess(finalQueryString) {
     const vectorQuery = vectorParam ? `&vector=${encodeURIComponent(vectorParam)}` : "";
     const newUrl = window.location.origin + window.location.pathname + "?" + finalQueryString + vectorQuery;
     window.history.replaceState(null, "", newUrl);
+    updateCompleteURL();
+    updateVectorDisplay();
 }
 
 /**
