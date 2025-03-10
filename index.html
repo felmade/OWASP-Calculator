@@ -324,7 +324,7 @@
 <!-- Mapping Modal -->
 <div class="modal fade" id="mappingModal" tabindex="-1" role="dialog" aria-labelledby="mappingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
+        <div class="modal-content text-center">
             <div class="modal-header">
                 <h5 class="modal-title" id="mappingModalLabel">Generate Custom Mapping Matrix</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -333,26 +333,36 @@
             </div>
             <div class="modal-body">
                 <div id="customMappingSection" class="mt-4">
-                    <div class="form-group">
-                        <label for="likelihoodLevelsInput">Number of Likelihood Levels:</label>
-                        <input type="number" id="likelihoodLevelsInput" class="form-control" placeholder="Enter a positive integer" min="1" step="1" />
+                    <div class="row">
+                        <!-- Left Column: Mapping Generator -->
+                        <div class="col-md-6 text-center">
+                            <h5>Generate Custom Mapping</h5>
+                            <div class="form-group">
+                                <label for="likelihoodLevelsInput">Number of Likelihood Levels:</label>
+                                <input type="number" id="likelihoodLevelsInput" class="form-control text-center" placeholder="Enter a positive integer" min="1" step="1" />
+                            </div>
+                            <div class="form-group">
+                                <label for="impactLevelsInput">Number of Impact Levels:</label>
+                                <input type="number" id="impactLevelsInput" class="form-control text-center" placeholder="Enter a positive integer" min="1" step="1" />
+                            </div>
+                            <div class="d-flex justify-content-center align-items-center">
+                                <button id="generateMappingMatrixBtn" class="btn btn-primary mt-2">
+                                    Generate Mapping Matrix
+                                </button>
+                            </div>
+                            <div id="mappingMatrixContainer" class="mt-4"></div>
+                        </div>
+                        <!-- Right Column: Saved Mappings -->
+                        <div class="col-md-6 text-center" id="savedMappingsContainer">
+                            <h5>Saved Mappings</h5>
+                            <!-- Dynamically insert saved mappings here -->
+                            <p>No Saved Mappings Yet!</p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="impactLevelsInput">Number of Impact Levels:</label>
-                        <input type="number" id="impactLevelsInput" class="form-control" placeholder="Enter a positive integer" min="1" step="1" />
-                    </div>
-                    <div style="display: flex; justify-content: center; align-items: center;">
-                        <button id="generateMappingMatrixBtn" class="btn btn-primary mt-2">
-                            Generate Mapping Matrix
-                        </button>
-                    </div>
-                    <div id="mappingMatrixContainer" class="mt-4"></div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    Close
-                </button>
+            <div class="modal-footer text-center">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
