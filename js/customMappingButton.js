@@ -1,6 +1,6 @@
 import {getUrlParameter, performAdvancedCalculation, updateCompleteURL, updateVectorDisplay} from "./url_logic.js";
 import { calculate } from "./script.js";
-import { setMappingCookie, deleteMappingCookie, listMappingCookies } from "./cookie_utils.js";
+import {setMappingCookie, deleteMappingCookie, listMappingCookies, getMappingCookie} from "./cookie_utils.js";
 
 // Ensure that the saved mappings are loaded into the HTML modal's right column on page load
 document.addEventListener("DOMContentLoaded", () => {
@@ -80,13 +80,16 @@ export function initMappingMatrixGenerator() {
             const finalQueryString = validateDialogInputs(dialog, numLikelihood, numImpact);
             if (!finalQueryString) return;
 
-            // Retrieve the mapping name input and save mapping as a cookie if provided
             const mappingNameInput = dialog.querySelector("input#mappingNameInput");
-            const mappingName = mappingNameInput ? mappingNameInput.value.trim() : "";
-            if (mappingName) {
-                setMappingCookie(mappingName, finalQueryString);
-            }
+            const newMappingName = mappingNameInput ? mappingNameInput.value.trim() : "";
 
+            if (newMappingName) {
+                if (mappingNameExists(newMappingName)) {
+                    alert("A mapping with the same name already exists. Please choose a different name.");
+                    return;
+                }
+                setMappingCookie(newMappingName, finalQueryString);
+            }
             updateUrlAndProcess(finalQueryString);
             dialog.close();
             document.body.removeChild(dialog);
@@ -97,14 +100,14 @@ export function initMappingMatrixGenerator() {
 
 /**
  * Creates and returns the mapping dialog element.
- * The dialog contains the mapping table and an optional mapping name input
- * along with "Confirm Mapping" and "Discard Changes" buttons.
- *
+ * If the optional prefill parameter is provided, the dialog fields are pre-populated.
  * @param {number} numLikelihood - Number of likelihood levels.
  * @param {number} numImpact - Number of impact levels.
+ * @param {Object} [prefill={}] - Optional prefill object:
+ *        { likelihoodHeaders: Array, impactHeaders: Array, mappingValues: Array, mappingName: string }
  * @returns {HTMLDialogElement} - The created dialog element.
  */
-function createMappingDialog(numLikelihood, numImpact) {
+function createMappingDialog(numLikelihood, numImpact, prefill = {}) {
     const dialog = document.createElement("dialog");
     dialog.style.padding = "20px";
     dialog.style.backgroundColor = "white";
@@ -115,18 +118,18 @@ function createMappingDialog(numLikelihood, numImpact) {
     dialog.style.maxWidth = window.innerWidth * 0.8 + "px";
     dialog.style.maxHeight = window.innerHeight * 0.8 + "px";
 
-    // Content wrapper
+    // Content wrapper for consistent layout
     const contentWrapper = document.createElement("div");
     contentWrapper.style.margin = "40px auto 0 auto";
     contentWrapper.style.padding = "0 20px";
     contentWrapper.style.textAlign = "center";
     dialog.appendChild(contentWrapper);
 
-    // Mapping table
-    const table = createMappingTable(numLikelihood, numImpact);
+    // Create mapping table – use prefill if available
+    const table = createMappingTable(numLikelihood, numImpact, prefill);
     contentWrapper.appendChild(table);
 
-    // Optional mapping name input (to save mapping as cookie)
+    // Mapping Name Input Field
     const nameLabel = document.createElement("label");
     nameLabel.setAttribute("for", "mappingNameInput");
     nameLabel.innerText = "Mapping Name (optional):";
@@ -139,6 +142,9 @@ function createMappingDialog(numLikelihood, numImpact) {
     mappingNameInput.className = "form-control";
     mappingNameInput.placeholder = "Enter a name to save this mapping";
     mappingNameInput.style.marginBottom = "10px";
+    if (prefill.mappingName) {
+        mappingNameInput.value = prefill.mappingName;
+    }
     contentWrapper.appendChild(mappingNameInput);
 
     // Button Container
@@ -157,7 +163,7 @@ function createMappingDialog(numLikelihood, numImpact) {
     confirmBtn.style.cursor = "pointer";
     btnContainer.appendChild(confirmBtn);
 
-    // Close (Discard) Button
+    // Discard Changes Button
     const closeBtn = document.createElement("button");
     closeBtn.className = "btn btn-danger";
     closeBtn.innerText = "Discard Changes";
@@ -176,13 +182,14 @@ function createMappingDialog(numLikelihood, numImpact) {
 }
 
 /**
- * Creates and returns the mapping table element.
- *
+ * Creates and returns the mapping table element prefilled if prefill values are provided.
  * @param {number} numLikelihood - Number of likelihood levels.
  * @param {number} numImpact - Number of impact levels.
+ * @param {Object} [prefill={}] - Optional prefill object:
+ *        { likelihoodHeaders: Array, impactHeaders: Array, mappingValues: Array }
  * @returns {HTMLTableElement} - The created table element.
  */
-function createMappingTable(numLikelihood, numImpact) {
+function createMappingTable(numLikelihood, numImpact, prefill = {}) {
     const rowHeaderWidth = 220;
     const colWidth = 180;
     const cellHeight = 50;
@@ -214,7 +221,10 @@ function createMappingTable(numLikelihood, numImpact) {
         colHeaderInput.className = "form-control custom-col-header";
         colHeaderInput.style.width = colWidth + "px";
         colHeaderInput.style.height = "40px";
-        colHeaderInput.value = defaultImpactLevels[j] || ("Impact " + (j + 1));
+        colHeaderInput.value =
+            (prefill.impactHeaders && prefill.impactHeaders[j]) ||
+            defaultImpactLevels[j] ||
+            ("Impact " + (j + 1));
         th.appendChild(colHeaderInput);
         headerRow.appendChild(th);
     }
@@ -226,6 +236,7 @@ function createMappingTable(numLikelihood, numImpact) {
     for (let i = 0; i < numLikelihood; i++) {
         const row = document.createElement("tr");
 
+        // Row header cell
         const rowHeaderCell = document.createElement("th");
         rowHeaderCell.style.padding = "5px";
         const rowHeaderInput = document.createElement("input");
@@ -233,10 +244,14 @@ function createMappingTable(numLikelihood, numImpact) {
         rowHeaderInput.className = "form-control custom-row-header";
         rowHeaderInput.style.width = rowHeaderWidth + "px";
         rowHeaderInput.style.height = "40px";
-        rowHeaderInput.value = defaultLikelihoodLevels[i] || ("Likelihood " + (i + 1));
+        rowHeaderInput.value =
+            (prefill.likelihoodHeaders && prefill.likelihoodHeaders[i]) ||
+            defaultLikelihoodLevels[i] ||
+            ("Likelihood " + (i + 1));
         rowHeaderCell.appendChild(rowHeaderInput);
         row.appendChild(rowHeaderCell);
 
+        // Mapping cells
         for (let j = 0; j < numImpact; j++) {
             const cell = document.createElement("td");
             cell.style.padding = "5px";
@@ -248,6 +263,9 @@ function createMappingTable(numLikelihood, numImpact) {
             input.style.height = "40px";
             input.dataset.row = i;
             input.dataset.col = j;
+            if (prefill.mappingValues && prefill.mappingValues[i * numImpact + j] !== undefined) {
+                input.value = prefill.mappingValues[i * numImpact + j];
+            }
             cell.appendChild(input);
             row.appendChild(cell);
         }
@@ -263,6 +281,91 @@ function createMappingTable(numLikelihood, numImpact) {
     table.style.transformOrigin = "top left";
 
     return table;
+}
+
+/**
+ * Opens the editor for an existing mapping configuration.
+ * @param {string} mappingName - The name of the saved configuration.
+ * @param {string} mappingQueryString - The query string (e.g., "likelihoodConfig=...&impactConfig=...&mapping=...").
+ */
+export function editMappingConfiguration(mappingName, mappingQueryString) {
+    // Parse mapping parameters from the query string
+    const params = new URLSearchParams(mappingQueryString);
+    const likelihoodConfig = params.get("likelihoodConfig");
+    const impactConfig = params.get("impactConfig");
+    const mapping = params.get("mapping");
+
+    if (!likelihoodConfig || !impactConfig || !mapping) {
+        alert("Invalid mapping configuration.");
+        return;
+    }
+
+    const likelihoodHeaders = likelihoodConfig.split(";");
+    const impactHeaders = impactConfig.split(";");
+    const mappingValues = mapping.split(",");
+
+    // Create a prefill object with existing values
+    const prefill = {
+        likelihoodHeaders,
+        impactHeaders,
+        mappingValues,
+        mappingName
+    };
+
+    const numLikelihood = likelihoodHeaders.length;
+    const numImpact = impactHeaders.length;
+    const dialog = createMappingDialog(numLikelihood, numImpact, prefill);
+    document.body.appendChild(dialog);
+
+    // Hide the mapping modal (the original dialog) before showing the edit dialog
+    const mappingModalElement = document.getElementById("mappingModal");
+    if (mappingModalElement) {
+        $('#mappingModal').modal('hide');
+    }
+
+    // Blur the main content
+    const mainElement = document.querySelector("main");
+    if (mainElement) {
+        mainElement.classList.add("blurred");
+    }
+
+    // When the edit dialog is closed (saved or discarded), remove blur and show the mapping modal again
+    dialog.addEventListener("close", () => {
+        if (mainElement) {
+            mainElement.classList.remove("blurred");
+        }
+        if (mappingModalElement) {
+            $('#mappingModal').modal('show');
+        }
+    }, { once: true });
+
+    dialog.showModal();
+
+    const confirmBtn = dialog.querySelector("button.btn.btn-success");
+    if (!confirmBtn) {
+        console.error("Confirm button not found in the dialog.");
+        return;
+    }
+    confirmBtn.addEventListener("click", function () {
+        const finalQueryString = validateDialogInputs(dialog, numLikelihood, numImpact);
+        if (!finalQueryString) return;
+
+        const mappingNameInput = dialog.querySelector("input#mappingNameInput");
+        const newMappingName = mappingNameInput ? mappingNameInput.value.trim() : "";
+
+        // Allow the same name; if changed, check for duplicates.
+        if (newMappingName) {
+            if (newMappingName !== mappingName && mappingNameExists(newMappingName)) {
+                alert("A mapping with the same name already exists. Please choose a different name.");
+                return;
+            }
+            setMappingCookie(newMappingName, finalQueryString);
+        }
+        updateUrlAndProcess(finalQueryString);
+        dialog.close();
+        document.body.removeChild(dialog);
+        calculate();
+    });
 }
 
 /**
@@ -375,6 +478,15 @@ export function validateDialogInputs(modal, numLikelihood, numImpact) {
 }
 
 /**
+ * Checks if a mapping with the given name already exists.
+ * @param {string} mappingName - The mapping name to check.
+ * @returns {boolean} - Returns true if a mapping with the same name exists, otherwise false.
+ */
+function mappingNameExists(mappingName) {
+    return getMappingCookie(mappingName) !== null;
+}
+
+/**
  * refreshSavedMappingsList()
  * ---------------------------
  * Retrieves all saved mapping cookies using listMappingCookies() and populates the
@@ -386,58 +498,96 @@ export function validateDialogInputs(modal, numLikelihood, numImpact) {
 function refreshSavedMappingsList(modal) {
     const savedMappingsContainer = modal.querySelector("#savedMappingsContainer");
     if (!savedMappingsContainer) return;
+
     // Clear existing content and set header
     savedMappingsContainer.innerHTML = "<h5>Saved Mappings</h5>";
+    savedMappingsContainer.style.textAlign = "center"; // Container-Inhalt zentrieren
+
     const mappings = listMappingCookies();
     console.log("Mappings found:", mappings); // Debug output
+
     if (mappings.length === 0) {
         const p = document.createElement("p");
         p.textContent = "No Saved Mappings Yet!";
         p.style.textAlign = "center";
         savedMappingsContainer.appendChild(p);
     } else {
+        // UL als flex container, der alle LI zentriert
         const ul = document.createElement("ul");
         ul.className = "list-unstyled";
+        ul.style.margin = "0 auto";
+        ul.style.display = "flex";
+        ul.style.flexDirection = "column";
+        ul.style.alignItems = "center";
+
         mappings.forEach(mapping => {
             const li = document.createElement("li");
             li.style.display = "flex";
-            li.style.justifyContent = "space-between";
+            li.style.justifyContent = "center"; // Inhalt des LI zentrieren
             li.style.alignItems = "center";
             li.style.padding = "5px 0";
+            li.style.width = "100%"; // Optionale Einstellung, damit LI den vollen Platz einnimmt
 
-            const nameSpan = document.createElement("span");
-            nameSpan.textContent = mapping.name;
-            li.appendChild(nameSpan);
+            // Container für Badge und Buttons
+            const configPanel = document.createElement("div");
+            configPanel.style.display = "flex";
+            configPanel.style.alignItems = "center";
+            configPanel.style.gap = "5px";
 
-            const actionsDiv = document.createElement("div");
-            actionsDiv.style.display = "flex";
-            actionsDiv.style.gap = "5px";
+            // Erstelle ein Badge für den Konfigurationsnamen
+            const configBadge = document.createElement("span");
+            configBadge.textContent = "Config: " + mapping.name;
+            configBadge.classList.add("badge");
+            // Style für ein farbiges, umrahmtes Badge (ähnlich einem Button)
+            configBadge.style.backgroundColor = "transparent";
+            configBadge.style.border = "2px solid #007bff"; // blaue Umrandung
+            configBadge.style.color = "#007bff";             // blaue Schrift
+            configBadge.style.borderRadius = "0.25rem";
+            configBadge.style.fontSize = "1rem";
+            configBadge.style.fontWeight = "bold";
+            configBadge.style.padding = "0.5rem 1rem";
+            configBadge.style.marginRight = "10px";
+            configPanel.appendChild(configBadge);
 
-            // Load button: Loads the mapping, updates the URL, and triggers calculation.
+            // Load Button
             const loadBtn = document.createElement("button");
-            loadBtn.className = "btn btn-success btn-sm";
+            loadBtn.className = "btn btn-success";
             loadBtn.textContent = "Load";
+            loadBtn.style.fontSize = "1rem";
+            loadBtn.style.padding = "0.5rem 1rem";
             loadBtn.addEventListener("click", () => {
                 updateUrlAndProcess(mapping.value);
-                // Close the modal
                 $('#mappingModal').modal('hide');
                 calculate();
             });
-            actionsDiv.appendChild(loadBtn);
+            configPanel.appendChild(loadBtn);
 
-            // Delete button: Deletes the mapping cookie.
+            // Edit Button
+            const editBtn = document.createElement("button");
+            editBtn.className = "btn btn-warning";
+            editBtn.textContent = "Edit";
+            editBtn.style.fontSize = "1rem";
+            editBtn.style.padding = "0.5rem 1rem";
+            editBtn.addEventListener("click", () => {
+                editMappingConfiguration(mapping.name, mapping.value);
+            });
+            configPanel.appendChild(editBtn);
+
+            // Delete Button
             const deleteBtn = document.createElement("button");
-            deleteBtn.className = "btn btn-secondary btn-sm";
+            deleteBtn.className = "btn btn-secondary";
             deleteBtn.textContent = "Delete";
+            deleteBtn.style.fontSize = "1rem";
+            deleteBtn.style.padding = "0.5rem 1rem";
             deleteBtn.addEventListener("click", () => {
                 if (confirm(`Are you sure you want to delete the mapping "${mapping.name}"?`)) {
                     deleteMappingCookie(mapping.name);
                     refreshSavedMappingsList(modal);
                 }
             });
-            actionsDiv.appendChild(deleteBtn);
+            configPanel.appendChild(deleteBtn);
 
-            li.appendChild(actionsDiv);
+            li.appendChild(configPanel);
             ul.appendChild(li);
         });
         savedMappingsContainer.appendChild(ul);

@@ -21,6 +21,18 @@ main.blurred {
 	filter: none !important;
 }
 
+.modal-dialog {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 90vw !important;
+	margin: auto;
+}
+
+.modal-content {
+	width: 60%;
+}
+
 h1 {font-weight: bold;}
 section {padding: 10px;}
 .row {display: flex;}
