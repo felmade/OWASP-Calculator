@@ -29,6 +29,14 @@ main.blurred {
 	margin: auto;
 }
 
+#modal-dialog-severity {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 50vw !important;
+	margin: auto;
+}
+
 .modal-content {
 	width: 60%;
 }

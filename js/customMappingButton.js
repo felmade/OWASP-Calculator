@@ -10,13 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-document.getElementById("openCustomModalBtn").addEventListener("click", function() {
-    const modal = document.getElementById("mappingModal");
-    if (modal) {
-        refreshSavedMappingsList(modal);
-    }
-});
-
 /**
  * INITMAPPINGMATRIXGENERATOR()
  * -----------------------------

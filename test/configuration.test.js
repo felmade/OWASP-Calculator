@@ -7,7 +7,7 @@ import {
     updateRiskLevelMapping,
     loadVectors,
     calculate,
-    addUrlConfigurationOption
+    addCustomConfigurationOption
 } from '../js/script.js';
 
 import {
@@ -1294,7 +1294,7 @@ describe('UI Config Usage', () => {
         config.uiSettings.disableDropdown = true;
 
         // Act
-        addUrlConfigurationOption();
+        addCustomConfigurationOption();
 
         // Assert
         expect(configSelect.disabled).toBe(true);
@@ -1306,7 +1306,7 @@ describe('UI Config Usage', () => {
         config.uiSettings.disableDropdown = false;
 
         // Act
-        addUrlConfigurationOption();
+        addCustomConfigurationOption();
 
         // Assert
         expect(configSelect.disabled).toBe(false);
@@ -1564,4 +1564,3 @@ describe("updateUrlAndProcess()", () => {
         expect(window.history.replaceState).toHaveBeenCalledWith(null, "", "http://localhost/test?" + queryString);
     });
 });
-

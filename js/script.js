@@ -169,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Check for "vector" in URL parameters and load vector accordingly
         const vectorParam = getUrlParameter("vector");
         if (vectorParam) {
-            loadVectors();
+            loadVectors(vectorParam);
         }
 
         // 4) Inputs => onInput => calculate
@@ -301,7 +301,7 @@ export function calculate() {
             console.warn("[WARN] parseUrlParameters failed => fallback to default logic.");
         } else {
             // => URL logic successful
-            addUrlConfigurationOption();
+            addCustomConfigurationOption();
             const advResult = performAdvancedCalculation();
             if (advResult) {
                 console.log("[INFO] Calculation done via URL logic", advResult);
@@ -585,24 +585,24 @@ function getUrlParameter(name) {
 }
 
 /**
- * ADDURLCONFIGURATIONOPTION()
+ * ADDCUSTOMCONFIGURATIONOPTION()
  * ---------------------------
- * Adds "URL Configuration" to the dropdown, selects it, and disables only
+ * Adds "Custom Configuration" to the dropdown, selects it, and disables only
  * the dropdown (input fields remain free).
  */
-export function addUrlConfigurationOption() {
+export function addCustomConfigurationOption() {
     const configSelect = document.getElementById("configurationSelect");
     if (!configSelect) return;
 
-    const alreadyExists = [...configSelect.options].some(opt => opt.value === "URL Configuration");
+    const alreadyExists = [...configSelect.options].some(opt => opt.value === "Custom Configuration");
     if (!alreadyExists) {
         const option = document.createElement("option");
-        option.value = "URL Configuration";
-        option.text = "URL Configuration";
+        option.value = "Custom Configuration";
+        option.text = "Custom Configuration";
         configSelect.appendChild(option);
     }
 
-    configSelect.value = "URL Configuration";
+    configSelect.value = "Custom Configuration";
     // Disable the dropdown if configured
     if (config.uiSettings.disableDropdown) {
         configSelect.disabled = true;
@@ -743,8 +743,8 @@ function buildHtmlMappingTable(lLevels, iLevels, mapObj) {
 /**
  * SHOWDYNAMICRISKMODAL()
  * ----------------------
- * Called when you want to open the modal ("How is Severity Risk calculated?").
- * Either displays the URL configuration (NxM) or falls back via setupOwaspFallback.
+ * Opens the modal ("How is Severity Risk calculated?").
+ * Either displays the URL configuration (NxM) or uses the fallback via setupOwaspFallback.
  */
 window.showDynamicRiskModal = function () {
     import("./url_logic.js").then(module => {
@@ -754,12 +754,10 @@ window.showDynamicRiskModal = function () {
         let impLvls = module.impactLevels;
         let mapObj = module.mappingObj;
 
-        // Check whether the URL-logic values (likeObj, impObj, mapping) are actually populated:
         const noValid = !likeObj || !Object.keys(likeObj).length
             || !impObj || !Object.keys(impObj).length
             || !mapObj || !Object.keys(mapObj).length;
 
-        // If empty => fallback => setupOwaspFallback
         if (noValid) {
             const selConf = document.getElementById("configurationSelect")?.value || "Default Configuration";
             const fb = setupOwaspFallback(selConf);
@@ -773,12 +771,14 @@ window.showDynamicRiskModal = function () {
         const tableL = buildHtmlRanges(likeObj, "Likelihood");
         const tableI = buildHtmlRanges(impObj, "Impact");
         const tableM = buildHtmlMappingTable(likeLvls, impLvls, mapObj);
-
         const finalHtml = tableL + tableI + tableM;
-        const modalBody = document.getElementById("dynamicModalBody");
+
+        const modalBody = document.getElementById("severityRiskModalBody");
         if (!modalBody) return;
         modalBody.innerHTML = finalHtml;
 
-        $("#exampleModalCenter").modal("show");
+        $("#severityRiskModal").modal("show");
+    }).catch(error => {
+        console.error("[showDynamicRiskModal] Error while loading the url_logic module:", error);
     });
 };
