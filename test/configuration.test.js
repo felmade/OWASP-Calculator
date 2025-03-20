@@ -35,11 +35,12 @@ import {
     updateUrlAndProcess,
     validateDialogInputs
 } from '../js/customMappingButton.js'
+
 import * as cookieUtils from "../js/cookie_utils.js";
 
 beforeAll(() => {
     if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
-        HTMLDialogElement.prototype.showModal = function() {
+        HTMLDialogElement.prototype.showModal = function () {
             this.setAttribute('open', '');
         };
     }
@@ -1835,6 +1836,8 @@ describe('mappingNameExists()', () => {
     });
 });
 
+import * as customMapping from '../js/customMappingButton.js';
+
 /**
  * --------------------------------------
  * TEST SUITE: refreshSavedMappingsList()
@@ -1843,8 +1846,11 @@ describe('mappingNameExists()', () => {
 describe('refreshSavedMappingsList()', () => {
     let modalElement;
     const dummyMappings = [
-        { name: "Mapping1", value: "likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4" },
-        { name: "Mapping2", value: "likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-4;MAJOR:4-9&mapping=A,B,C,D" }
+        {
+            name: "Mapping1",
+            value: "likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4"
+        },
+        {name: "Mapping2", value: "likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-4;MAJOR:4-9&mapping=A,B,C,D"}
     ];
 
     beforeEach(() => {
@@ -1884,5 +1890,145 @@ describe('refreshSavedMappingsList()', () => {
         // Check that the list contains two list items (<li>)
         const listItems = ul.querySelectorAll("li");
         expect(listItems.length).toBe(2);
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: Mapping Functionality Integration (Load, Delete, Store)
+ * --------------------------------------
+ */
+
+describe('Mapping Functionality Integration (Load, Delete, Store)', () => {
+    const dummyMappingValue = "likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4";
+    const dummyMapping = {name: "Mapping1", value: dummyMappingValue};
+
+    // Simulated cookie store variable
+    let mappingStore;
+
+    beforeEach(() => {
+        // Initialize the simulated cookie store with the dummy mapping.
+        mappingStore = [dummyMapping];
+
+        // Set up required DOM elements.
+        document.body.innerHTML = `
+      <div class="completeURL"><a id="completeURL" href="#"></a></div>
+      <div id="mappingModal">
+          <div id="savedMappingsContainer"></div>
+      </div>
+      <main></main>
+    `;
+
+        // Extended jQuery stub to support modal, addClass, removeClass, and val().
+        window.$ = jest.fn().mockImplementation(selector => {
+            const elements = document.querySelectorAll(selector);
+            return {
+                modal: jest.fn(),
+                addClass: jest.fn(),
+                removeClass: jest.fn(),
+                val: function (newVal) {
+                    if (newVal === undefined) {
+                        return elements.length ? elements[0].value : undefined;
+                    } else {
+                        elements.forEach(el => el.value = newVal);
+                        return this;
+                    }
+                }
+            };
+        });
+
+        // Stub listMappingCookies to return the current state of mappingStore.
+        jest.spyOn(cookieUtils, 'listMappingCookies').mockImplementation(() => mappingStore);
+
+        // For the Delete test, stub deleteMappingCookie to update the store.
+        jest.spyOn(cookieUtils, 'deleteMappingCookie').mockImplementation((mappingName) => {
+            mappingStore = mappingStore.filter(m => m.name !== mappingName);
+        });
+
+        // Stub calculate to avoid executing code that leads to "result is not defined".
+        window.calculate = jest.fn();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+    });
+
+    test('Load: Clicking the Load button should update the completeURL element (i.e. load the mapping)', () => {
+        // Arrange: Generate the saved mappings list in the modal.
+        const modal = document.getElementById("mappingModal");
+        refreshSavedMappingsList(modal);
+
+        // Act: Find the Load button and simulate a click event with bubbling.
+        const loadBtn = modal.querySelector("button.btn.btn-success");
+        expect(loadBtn).not.toBeNull();
+        loadBtn.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+        // Assert: Verify that the completeURL element has been updated with the expected query string.
+        const completeUrlAnchor = document.getElementById("completeURL");
+        expect(completeUrlAnchor).not.toBeNull();
+        expect(completeUrlAnchor.href).toContain("likelihoodConfig=LOW:0-3");
+        expect(completeUrlAnchor.href).toContain("mapping=Val1,Val2,Val3,Val4");
+    });
+
+    test('Delete: Clicking the Delete button should remove the mapping from the saved mappings list', () => {
+        // Arrange: Generate the saved mappings list in the modal.
+        const modal = document.getElementById("mappingModal");
+        refreshSavedMappingsList(modal);
+
+        // Override window.confirm to always return true.
+        window.confirm = jest.fn(() => true);
+
+        // Act: Find the Delete button and simulate a click event.
+        const deleteBtn = modal.querySelector("button.btn.btn-secondary");
+        expect(deleteBtn).not.toBeNull();
+        deleteBtn.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+
+        // Rebuild the saved mappings list after deletion.
+        refreshSavedMappingsList(modal);
+
+        // Assert: Verify that the saved mappings container no longer contains "Mapping1".
+        const savedMappingsContainer = document.getElementById("savedMappingsContainer");
+        expect(savedMappingsContainer.textContent).not.toContain("Mapping1");
+
+        // Optionally, check that the cookie store is now empty.
+        expect(mappingStore.length).toBe(0);
+    });
+
+    test('Store: Confirming a mapping should set the cookie', () => {
+        // Arrange: Open the mapping dialog.
+        const dialog = customMapping.createMappingDialog(2, 2);
+        document.body.appendChild(dialog);
+
+        // Simulate user input: set mapping name and mapping inputs.
+        const mappingNameInput = dialog.querySelector("input#mappingNameInput");
+        mappingNameInput.value = "NewMapping";
+
+        const mappingInputs = dialog.querySelectorAll("input.mapping-input");
+        expect(mappingInputs.length).toBeGreaterThanOrEqual(4);
+        mappingInputs[0].value = "Val1";
+        mappingInputs[1].value = "Val2";
+        mappingInputs[2].value = "Val3";
+        mappingInputs[3].value = "Val4";
+
+        // Stub validateDialogInputs to return a valid query string.
+        jest.spyOn(customMapping, 'validateDialogInputs').mockReturnValue(
+            "likelihoodConfig=LOW:0-9&impactConfig=MINOR:0-9&mapping=VAL"
+        );
+
+        // Act: Simulate click on the Confirm button.
+        const confirmBtn = dialog.querySelector("button.btn.btn-success");
+        expect(confirmBtn).not.toBeNull();
+        confirmBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        // Assert: Check that the cookie is set.
+        const storedCookie = cookieUtils.getMappingCookie("NewMapping");
+        expect(storedCookie).toBe("likelihoodConfig=LOW:0-9&impactConfig=MINOR:0-9&mapping=VAL");
+
+        // Cleanup: Remove the dialog if it still exists.
+        if (document.body.contains(dialog)) {
+            dialog.close();
+            document.body.removeChild(dialog);
+        }
     });
 });

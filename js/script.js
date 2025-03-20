@@ -295,7 +295,6 @@ function updateURLInAddressBar() {
  */
 export function calculate() {
     if (shouldUseUrlLogic()) {
-        console.log("[INFO] We have the correct parameters -> URL-Logic is being used.");
         const parseOk = parseUrlParameters();
         if (!parseOk) {
             console.warn("[WARN] parseUrlParameters failed => fallback to default logic.");
@@ -304,7 +303,7 @@ export function calculate() {
             addCustomConfigurationOption();
             const advResult = performAdvancedCalculation();
             if (advResult) {
-                console.log("[INFO] Calculation done via URL logic", advResult);
+
                 fillUIFromStoredVector();
 
                 // Disable elements if configured

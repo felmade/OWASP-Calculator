@@ -1,6 +1,6 @@
 // File: url_logic.js
 
-import { config } from "../config.js";
+import {config} from "../config.js";
 
 /* ================================
    ========== CONSTANTS ===========
@@ -85,12 +85,6 @@ export function parseUrlParameters() {
         // 4) Parse optional vector parameter or use default.
         storedVector = vectorParam ? parseVector(vectorParam) : { ...DEFAULT_VECTOR };
 
-        console.log("[URL_LOGIC] parseUrlParameters() OK", {
-            likelihoodConfigObj,
-            impactConfigObj,
-            mappingObj,
-            storedVector,
-        });
         return true;
     } catch (err) {
         console.error("[URL_LOGIC] parseUrlParameters() error:", err);
@@ -186,9 +180,7 @@ export function performAdvancedCalculation() {
         RSElem.style.fontSize = "24px";
     }
 
-    const result = { L_score, I_score, L_class, I_class, finalRisk };
-    console.log("[performAdvancedCalculation] done:", result);
-    return result;
+    return {L_score, I_score, L_class, I_class, finalRisk};
 }
 
 /* ============================================
