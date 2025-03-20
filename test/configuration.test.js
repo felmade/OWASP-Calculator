@@ -26,7 +26,24 @@ import {
 
 import {config} from '../config.js';
 
-import {updateUrlAndProcess, validateDialogInputs} from '../js/customMappingButton.js'
+import {
+    createMappingDialog,
+    createMappingTable,
+    editMappingConfiguration, initMappingMatrixGenerator,
+    mappingNameExists,
+    refreshSavedMappingsList,
+    updateUrlAndProcess,
+    validateDialogInputs
+} from '../js/customMappingButton.js'
+import * as cookieUtils from "../js/cookie_utils.js";
+
+beforeAll(() => {
+    if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
+        HTMLDialogElement.prototype.showModal = function() {
+            this.setAttribute('open', '');
+        };
+    }
+});
 
 /**
  * --------------------------------------
@@ -1562,5 +1579,310 @@ describe("updateUrlAndProcess()", () => {
         updateUrlAndProcess(queryString);
 
         expect(window.history.replaceState).toHaveBeenCalledWith(null, "", "http://localhost/test?" + queryString);
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: initMappingMatrixGenerator()
+ * --------------------------------------
+ */
+describe('initMappingMatrixGenerator()', () => {
+    let generateBtn, likelihoodInput, impactInput, modalElement, mainElement;
+    let originalAlert;
+
+    beforeEach(() => {
+        // Stub jQuery's modal function to prevent errors in jsdom.
+        window.$ = jest.fn().mockImplementation(() => ({
+            modal: jest.fn()
+        }));
+
+        // Set up DOM elements expected by initMappingMatrixGenerator
+        document.body.innerHTML = `
+            <input id="likelihoodLevelsInput" value="3">
+            <input id="impactLevelsInput" value="3">
+            <button id="generateMappingMatrixBtn">Generate Mapping Matrix</button>
+            <div id="mappingModal"></div>
+            <main></main>
+        `;
+        generateBtn = document.getElementById("generateMappingMatrixBtn");
+        likelihoodInput = document.getElementById("likelihoodLevelsInput");
+        impactInput = document.getElementById("impactLevelsInput");
+        modalElement = document.getElementById("mappingModal");
+        mainElement = document.querySelector("main");
+
+        // Override alert to capture calls
+        originalAlert = window.alert;
+        window.alert = jest.fn();
+
+        // Initialize the function to register event listeners
+        initMappingMatrixGenerator();
+    });
+
+    afterEach(() => {
+        window.alert = originalAlert;
+        document.body.innerHTML = "";
+    });
+
+    test('Should trigger an alert for invalid inputs (e.g., <= 0)', () => {
+        likelihoodInput.value = "0";
+        impactInput.value = "0";
+        generateBtn.click();
+        expect(window.alert).toHaveBeenCalledWith("Please enter valid positive integers for both Likelihood and Impact Levels.");
+    });
+
+    test('Should trigger an alert for inputs greater than 5', () => {
+        likelihoodInput.value = "6";
+        impactInput.value = "3";
+        generateBtn.click();
+        expect(window.alert).toHaveBeenCalledWith("Please choose at most 5 levels for Likelihood and Impact.");
+    });
+
+    test('For valid inputs, a dialog should be created and appended to the body', () => {
+        likelihoodInput.value = "3";
+        impactInput.value = "3";
+        // Before clicking, there should be no <dialog> element in the DOM
+        expect(document.querySelector("dialog")).toBeNull();
+
+        generateBtn.click();
+
+        // The click should trigger the creation of a dialog
+        const dialog = document.querySelector("dialog");
+        expect(dialog).not.toBeNull();
+        // Check if the main content has been blurred (i.e., "blurred" class added)
+        expect(mainElement.classList.contains("blurred")).toBe(true);
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: createMappingDialog()
+ * --------------------------------------
+ */
+describe('createMappingDialog()', () => {
+    test('Should return a <dialog> element with the expected sub-elements', () => {
+        const prefill = {
+            mappingName: "TestMapping",
+            likelihoodHeaders: ["LOW:0-2", "HIGH:2-9"],
+            impactHeaders: ["MINOR:0-5", "MAJOR:5-9"],
+            mappingValues: ["Val1", "Val2", "Val3", "Val4"]
+        };
+        const dialog = createMappingDialog(2, 2, prefill);
+        expect(dialog.tagName).toBe("DIALOG");
+
+        // Check that a table is present
+        const table = dialog.querySelector("table");
+        expect(table).not.toBeNull();
+
+        // Verify that the mapping name input exists and contains the prefill value
+        const mappingNameInput = dialog.querySelector("input#mappingNameInput");
+        expect(mappingNameInput).not.toBeNull();
+        expect(mappingNameInput.value).toBe("TestMapping");
+
+        // Verify that two buttons are present: Confirm and Discard
+        const confirmBtn = dialog.querySelector("button.btn.btn-success");
+        const discardBtn = dialog.querySelector("button.btn.btn-danger");
+        expect(confirmBtn).not.toBeNull();
+        expect(discardBtn).not.toBeNull();
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: createMappingTable()
+ * --------------------------------------
+ */
+describe('createMappingTable()', () => {
+    test('Creates a table with the correct header and body structure (without prefill)', () => {
+        const numLikelihood = 3;
+        const numImpact = 2;
+        const table = createMappingTable(numLikelihood, numImpact);
+        expect(table.tagName).toBe("TABLE");
+
+        // Check the table header (thead)
+        const thead = table.querySelector("thead");
+        expect(thead).not.toBeNull();
+        const headerRow = thead.querySelector("tr");
+        // There should be 1 empty cell + numImpact columns
+        expect(headerRow.children.length).toBe(1 + numImpact);
+
+        // Check the table body (tbody)
+        const tbody = table.querySelector("tbody");
+        expect(tbody).not.toBeNull();
+        const rows = tbody.querySelectorAll("tr");
+        expect(rows.length).toBe(numLikelihood);
+        // Each row should have 1 header cell + numImpact cells
+        rows.forEach(row => {
+            expect(row.children.length).toBe(1 + numImpact);
+        });
+    });
+
+    test('Creates a table and fills in prefill values', () => {
+        const prefill = {
+            likelihoodHeaders: ["LOW:0-2", "HIGH:2-9"],
+            impactHeaders: ["MINOR:0-5", "MAJOR:5-9"],
+            mappingValues: ["V1", "V2", "V3", "V4"]
+        };
+        const table = createMappingTable(2, 2, prefill);
+
+        // Check the column header inputs
+        const colHeaderInputs = table.querySelectorAll("thead input.custom-col-header");
+        expect(colHeaderInputs.length).toBe(2);
+        expect(colHeaderInputs[0].value).toBe("MINOR:0-5");
+        expect(colHeaderInputs[1].value).toBe("MAJOR:5-9");
+
+        // Check the row header inputs
+        const rowHeaderInputs = table.querySelectorAll("tbody input.custom-row-header");
+        expect(rowHeaderInputs.length).toBe(2);
+        expect(rowHeaderInputs[0].value).toBe("LOW:0-2");
+        expect(rowHeaderInputs[1].value).toBe("HIGH:2-9");
+
+        // Check the mapping inputs
+        const mappingInputs = table.querySelectorAll("tbody input.mapping-input");
+        expect(mappingInputs.length).toBe(4);
+        expect(mappingInputs[0].value).toBe("V1");
+        expect(mappingInputs[1].value).toBe("V2");
+        expect(mappingInputs[2].value).toBe("V3");
+        expect(mappingInputs[3].value).toBe("V4");
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: editMappingConfiguration()
+ * --------------------------------------
+ */
+describe('editMappingConfiguration()', () => {
+    let mappingModal, mainElement;
+    const sampleQueryString = "likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4";
+
+    beforeEach(() => {
+        // Create a dummy mappingModal and main element
+        document.body.innerHTML = `
+            <div id="mappingModal" class="modal"></div>
+            <main></main>
+        `;
+        mappingModal = document.getElementById("mappingModal");
+        mainElement = document.querySelector("main");
+
+        // Add minimal jQuery-like behavior to simulate $('#mappingModal').modal('hide') and ('show')
+        window.$ = jest.fn().mockImplementation(selector => {
+            return {
+                modal: jest.fn()
+            };
+        });
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = "";
+        jest.clearAllMocks();
+    });
+
+    test('Should create a dialog with prefilled values', () => {
+        // Call editMappingConfiguration
+        editMappingConfiguration("TestMapping", sampleQueryString);
+
+        // Check if a <dialog> element has been appended to the body
+        const dialog = document.querySelector("dialog");
+        expect(dialog).not.toBeNull();
+
+        // Verify that prefill values are present in the input fields
+        const rowHeaderInputs = dialog.querySelectorAll("input.custom-row-header");
+        expect(rowHeaderInputs.length).toBe(2);
+        expect(rowHeaderInputs[0].value).toBe("LOW:0-3");
+        expect(rowHeaderInputs[1].value).toBe("HIGH:3-9");
+
+        const colHeaderInputs = dialog.querySelectorAll("input.custom-col-header");
+        expect(colHeaderInputs.length).toBe(2);
+        expect(colHeaderInputs[0].value).toBe("MINOR:0-5");
+        expect(colHeaderInputs[1].value).toBe("MAJOR:5-9");
+
+        // Verify that the mapping inputs are filled with values
+        const mappingInputs = dialog.querySelectorAll("input.mapping-input");
+        expect(mappingInputs.length).toBe(4);
+        expect(mappingInputs[0].value).toBe("Val1");
+        expect(mappingInputs[1].value).toBe("Val2");
+        expect(mappingInputs[2].value).toBe("Val3");
+        expect(mappingInputs[3].value).toBe("Val4");
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: mappingNameExists()
+ * --------------------------------------
+ */
+describe('mappingNameExists()', () => {
+    let getMappingCookieSpy;
+
+    beforeEach(() => {
+        // Spy on the getMappingCookie function from cookie_utils
+        getMappingCookieSpy = jest.spyOn(cookieUtils, 'getMappingCookie');
+    });
+
+    afterEach(() => {
+        getMappingCookieSpy.mockRestore();
+    });
+
+    test('Should return true when getMappingCookie() returns a value', () => {
+        getMappingCookieSpy.mockReturnValue("dummyValue");
+        expect(mappingNameExists("TestMapping")).toBe(true);
+    });
+
+    test('Should return false when getMappingCookie() returns null', () => {
+        getMappingCookieSpy.mockReturnValue(null);
+        expect(mappingNameExists("NonExistentMapping")).toBe(false);
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: refreshSavedMappingsList()
+ * --------------------------------------
+ */
+describe('refreshSavedMappingsList()', () => {
+    let modalElement;
+    const dummyMappings = [
+        { name: "Mapping1", value: "likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4" },
+        { name: "Mapping2", value: "likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-4;MAJOR:4-9&mapping=A,B,C,D" }
+    ];
+
+    beforeEach(() => {
+        // Create a dummy modal container for saved mappings
+        document.body.innerHTML = `
+            <div id="mappingModal">
+                <div id="savedMappingsContainer"></div>
+            </div>
+        `;
+        modalElement = document.getElementById("mappingModal");
+
+        // Spy on listMappingCookies to return dummy mappings
+        jest.spyOn(cookieUtils, 'listMappingCookies').mockReturnValue(dummyMappings);
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+    });
+
+    test('Should display "No Saved Mappings Yet!" when no mappings exist', () => {
+        // Override listMappingCookies to return an empty array
+        cookieUtils.listMappingCookies.mockReturnValue([]);
+        refreshSavedMappingsList(modalElement);
+
+        const savedMappingsContainer = modalElement.querySelector("#savedMappingsContainer");
+        expect(savedMappingsContainer.textContent).toContain("No Saved Mappings Yet!");
+    });
+
+    test('Should display saved mappings when mappings exist', () => {
+        refreshSavedMappingsList(modalElement);
+
+        const savedMappingsContainer = modalElement.querySelector("#savedMappingsContainer");
+        // Check if a list (<ul>) is present
+        const ul = savedMappingsContainer.querySelector("ul");
+        expect(ul).not.toBeNull();
+        // Check that the list contains two list items (<li>)
+        const listItems = ul.querySelectorAll("li");
+        expect(listItems.length).toBe(2);
     });
 });

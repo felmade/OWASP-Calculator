@@ -1,9 +1,16 @@
-import {getUrlParameter, performAdvancedCalculation, updateCompleteURL, updateVectorDisplay} from "./url_logic.js";
+import {getUrlParameter, updateCompleteURL, updateVectorDisplay} from "./url_logic.js";
 import { calculate } from "./script.js";
 import {setMappingCookie, deleteMappingCookie, listMappingCookies, getMappingCookie} from "./cookie_utils.js";
 
 // Ensure that the saved mappings are loaded into the HTML modal's right column on page load
 document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("mappingModal");
+    if (modal) {
+        refreshSavedMappingsList(modal);
+    }
+});
+
+document.getElementById("openCustomModalBtn")?.addEventListener("click", function() {
     const modal = document.getElementById("mappingModal");
     if (modal) {
         refreshSavedMappingsList(modal);
@@ -100,7 +107,7 @@ export function initMappingMatrixGenerator() {
  *        { likelihoodHeaders: Array, impactHeaders: Array, mappingValues: Array, mappingName: string }
  * @returns {HTMLDialogElement} - The created dialog element.
  */
-function createMappingDialog(numLikelihood, numImpact, prefill = {}) {
+export function createMappingDialog(numLikelihood, numImpact, prefill = {}) {
     const dialog = document.createElement("dialog");
     dialog.style.padding = "20px";
     dialog.style.backgroundColor = "white";
@@ -182,14 +189,14 @@ function createMappingDialog(numLikelihood, numImpact, prefill = {}) {
  *        { likelihoodHeaders: Array, impactHeaders: Array, mappingValues: Array }
  * @returns {HTMLTableElement} - The created table element.
  */
-function createMappingTable(numLikelihood, numImpact, prefill = {}) {
+export function createMappingTable(numLikelihood, numImpact, prefill = {}) {
     const rowHeaderWidth = 220;
     const colWidth = 180;
     const cellHeight = 50;
     const tableWidth = rowHeaderWidth + numImpact * colWidth;
     const tableHeight = (numLikelihood + 1) * cellHeight;
-    const defaultLikelihoodLevels = ["LOW:0-2", "MEDIUM:3-4", "HIGH:5-6", "VERY HIGH:7-8", "EXTREME:9-10"];
-    const defaultImpactLevels = ["MINOR:0-2", "MODERATE:3-4", "SEVERE:5-6", "CRITICAL:7-8", "DISASTROUS:9-10"];
+    const defaultLikelihoodLevels = ["LOW:0-2", "MEDIUM:2-4", "HIGH:4-6", "VERY HIGH:6-8", "EXTREME:8-9"];
+    const defaultImpactLevels = ["MINOR:0-2", "MODERATE:2-4", "SEVERE:4-6", "CRITICAL:6-8", "DISASTROUS:8-9"];
 
     const table = document.createElement("table");
     table.className = "table table-bordered";
@@ -475,7 +482,7 @@ export function validateDialogInputs(modal, numLikelihood, numImpact) {
  * @param {string} mappingName - The mapping name to check.
  * @returns {boolean} - Returns true if a mapping with the same name exists, otherwise false.
  */
-function mappingNameExists(mappingName) {
+export function mappingNameExists(mappingName) {
     return getMappingCookie(mappingName) !== null;
 }
 
@@ -488,7 +495,7 @@ function mappingNameExists(mappingName) {
  *
  * @param {HTMLElement} modal - The modal element.
  */
-function refreshSavedMappingsList(modal) {
+export function refreshSavedMappingsList(modal) {
     const savedMappingsContainer = modal.querySelector("#savedMappingsContainer");
     if (!savedMappingsContainer) return;
 
@@ -497,7 +504,6 @@ function refreshSavedMappingsList(modal) {
     savedMappingsContainer.style.textAlign = "center"; // Container-Inhalt zentrieren
 
     const mappings = listMappingCookies();
-    console.log("Mappings found:", mappings); // Debug output
 
     if (mappings.length === 0) {
         const p = document.createElement("p");
