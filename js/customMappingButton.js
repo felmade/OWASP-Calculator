@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modal) {
         refreshSavedMappingsList(modal);
     }
+    createMappingFromUrlButton();
 });
 
 document.getElementById("openCustomModalBtn")?.addEventListener("click", function() {
@@ -590,5 +591,113 @@ export function refreshSavedMappingsList(modal) {
             ul.appendChild(li);
         });
         savedMappingsContainer.appendChild(ul);
+    }
+}
+
+/**
+ * Validates the mapping configuration in the URL by simulating input fields
+ * and using the existing validateDialogInputs function.
+ * If the configuration is valid, it prompts the user for a mapping name,
+ * checks if the name already exists, saves the configuration in a cookie,
+ * and refreshes the saved mappings list.
+ */
+function validateURLMapping() {
+    // Read the query string (without the leading '?')
+    const queryString = window.location.search.substring(1);
+    if (!queryString.includes("likelihoodConfig") ||
+        !queryString.includes("impactConfig") ||
+        !queryString.includes("mapping")) {
+        alert("The URL does not contain the required parameters (likelihoodConfig, impactConfig, mapping).");
+        return;
+    }
+
+    const params = new URLSearchParams(queryString);
+    const likelihoodConfig = params.get("likelihoodConfig");
+    const impactConfig = params.get("impactConfig");
+    const mapping = params.get("mapping");
+
+    if (!likelihoodConfig || !impactConfig || !mapping) {
+        alert("The URL does not contain all necessary parameters.");
+        return;
+    }
+
+    // Create a dummy container to simulate input fields for validateDialogInputs
+    const dummyModal = document.createElement("div");
+
+    // Add likelihood headers (expected class: custom-row-header)
+    const likelihoodHeaders = likelihoodConfig.split(";");
+    likelihoodHeaders.forEach(header => {
+        const input = document.createElement("input");
+        input.className = "form-control custom-row-header";
+        input.value = header;
+        dummyModal.appendChild(input);
+    });
+
+    // Add impact headers (expected class: custom-col-header)
+    const impactHeaders = impactConfig.split(";");
+    impactHeaders.forEach(header => {
+        const input = document.createElement("input");
+        input.className = "form-control custom-col-header";
+        input.value = header;
+        dummyModal.appendChild(input);
+    });
+
+    // Add mapping values (expected class: mapping-input)
+    const mappingValues = mapping.split(",");
+    const numLikelihood = likelihoodHeaders.length;
+    const numImpact = impactHeaders.length;
+    mappingValues.forEach((value, index) => {
+        const input = document.createElement("input");
+        input.className = "form-control mapping-input";
+        input.value = value;
+        // Set dataset attributes so validateDialogInputs can correctly map the fields
+        input.dataset.row = Math.floor(index / numImpact);
+        input.dataset.col = index % numImpact;
+        dummyModal.appendChild(input);
+    });
+
+    // Validate using the existing validateDialogInputs function
+    const finalQueryString = validateDialogInputs(dummyModal, numLikelihood, numImpact);
+    if (!finalQueryString) {
+        alert("The mapping configuration in the URL is invalid.");
+        return;
+    }
+
+    // Prompt the user for a mapping name
+    const mappingName = prompt("Please enter a name for this mapping configuration:");
+    if (mappingName) {
+        // Check if a mapping with the same name already exists
+        if (mappingNameExists(mappingName)) {
+            alert("A mapping with the same name already exists. Please choose a different name.");
+            return;
+        }
+        // Save the configuration in a cookie
+        setMappingCookie(mappingName, finalQueryString);
+        alert("Mapping configuration has been successfully saved.");
+        // Refresh the saved mappings list by calling refreshSavedMappingsList if modal exists
+        const modal = document.getElementById("mappingModal");
+        if (modal) {
+            refreshSavedMappingsList(modal);
+        }
+    } else {
+        alert("No name entered. Mapping was not saved.");
+    }
+}
+
+/**
+ * Creates and inserts a button next to the "Generate Mapping Matrix" button.
+ * When clicked, the button triggers the validateURLMapping function.
+ */
+function createMappingFromUrlButton() {
+    const generateMappingMatrixBtn = document.getElementById("generateMappingMatrixBtn");
+    if (generateMappingMatrixBtn) {
+        const saveMappingURLButton = document.createElement("button");
+        saveMappingURLButton.innerText = "Save Mapping from URL";
+        saveMappingURLButton.className = "btn btn-info";
+        // Add left margin to separate the new button from the existing one
+        saveMappingURLButton.style.marginLeft = "10px";
+        saveMappingURLButton.addEventListener("click", validateURLMapping);
+        // Insert the button as a sibling element directly after the generate button
+        generateMappingMatrixBtn.parentNode.insertBefore(saveMappingURLButton, generateMappingMatrixBtn.nextSibling);
     }
 }
