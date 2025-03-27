@@ -1,6 +1,7 @@
 // File: url_logic.js
 
 import {config} from "../config.js";
+import {validateContinuousRange} from "./customMappingButton.js";
 
 /* ================================
    ========== CONSTANTS ===========
@@ -38,7 +39,7 @@ export let impactConfigObj = {};
 export let likelihoodLevels = [];
 export let impactLevels = [];
 export let mappingObj = {};
-export let storedVector = { ...DEFAULT_VECTOR };
+export let storedVector = {...DEFAULT_VECTOR};
 
 /* ============================================
    ========== STEP 1: URL LOGIC CHECK =========
@@ -60,6 +61,7 @@ export function shouldUseUrlLogic() {
 
 /**
  * Parses URL parameters: likelihoodConfig, impactConfig, mapping, and vector (optional).
+ * Validates that Likelihood and Impact cover the range 0-9 continuously.
  * On success, updates the exported variables and returns true.
  * On error, falls back to default configuration and returns false.
  * @returns {boolean}
@@ -75,6 +77,18 @@ export function parseUrlParameters() {
         likelihoodConfigObj = parseConfiguration(likelihoodConfigStr);
         impactConfigObj = parseConfiguration(impactConfigStr);
 
+        // Validate likelihood and impact ranges explicitly
+        const likelihoodRanges = Object.entries(likelihoodConfigObj).map(([label, [min, max]]) => ({label, min, max}));
+        const impactRanges = Object.entries(impactConfigObj).map(([label, [min, max]]) => ({label, min, max}));
+
+        if (!validateContinuousRange(likelihoodRanges, "Likelihood")) {
+            throw new Error("Likelihood ranges do not cover 0-9 continuously.");
+        }
+
+        if (!validateContinuousRange(impactRanges, "Impact")) {
+            throw new Error("Impact ranges do not cover 0-9 continuously.");
+        }
+
         // 2) Create level arrays (sorted by minimum value).
         likelihoodLevels = configObjToSortedLevels(likelihoodConfigObj);
         impactLevels = configObjToSortedLevels(impactConfigObj);
@@ -83,30 +97,23 @@ export function parseUrlParameters() {
         mappingObj = parseNxMMapping(likelihoodLevels, impactLevels, mappingStr);
 
         // 4) Parse optional vector parameter or use default.
-        storedVector = vectorParam ? parseVector(vectorParam) : { ...DEFAULT_VECTOR };
+        storedVector = vectorParam ? parseVector(vectorParam) : {...DEFAULT_VECTOR};
 
         return true;
     } catch (err) {
         console.error("[URL_LOGIC] parseUrlParameters() error:", err);
-        if (typeof swal === "function") {
-            swal({
-                title: "Parsing Error",
-                text: "Parsing failed. Default configuration will be used.",
-                icon: "error",
-                button: "OK",
-            }).then((willProceed) => {
-                if (willProceed) {
-                    const defaultVector = `?vector=(${VECTOR_KEYS
-                        .map((key) => `${key.toUpperCase()}:${DEFAULT_VECTOR[key]}`)
-                        .join("/")})`;
-                    window.location.href =
-                        window.location.origin + window.location.pathname + defaultVector;
-                }
-            });
-        }
+        alert("Parsing Error:\n" + err.message + "\nDefault configuration will be used.");
+
+        const defaultVector = `?vector=(${VECTOR_KEYS
+            .map((key) => `${key.toUpperCase()}:${DEFAULT_VECTOR[key]}`)
+            .join("/")})`;
+
+        window.location.href = window.location.origin + window.location.pathname + defaultVector;
+
         return false;
     }
 }
+
 
 /* ============================================
    ========== STEP 3: ADVANCED CALCULATION ======
@@ -318,7 +325,7 @@ function configObjToSortedLevels(configObj) {
     const tempArr = [];
     for (const level in configObj) {
         const [minVal, maxVal] = configObj[level];
-        tempArr.push({ level, minVal, maxVal });
+        tempArr.push({level, minVal, maxVal});
     }
     tempArr.sort((a, b) => a.minVal - b.minVal);
     return tempArr.map((item) => item.level);
@@ -360,7 +367,7 @@ function parseNxMMapping(lLevels, iLevels, shortStr) {
  * @returns {object} Parsed vector object.
  * @throws Will throw an error if the vector string is invalid.
  */
-function parseVector(str) {
+export function parseVector(str) {
     const clean = str.replace(/^\(/, "").replace(/\)$/, "");
     const segments = clean.split("/");
     if (!segments.length) {
@@ -453,22 +460,14 @@ export function checkRequiredParameters() {
 
     // If some (but not all) parameters are missing, show a warning and fallback.
     if (missingParams.length > 0 && missingParams.length < requiredParams.length) {
-        swal({
-            title: "Missing Parameters",
-            text: `The following parameters are missing: ${missingParams.join(
-                ", "
-            )}. Default configuration will be used.`,
-            icon: "warning",
-            button: "OK",
-        }).then((willProceed) => {
-            if (willProceed) {
-                const defaultVector = `?vector=(${VECTOR_KEYS
-                    .map((key) => `${key.toUpperCase()}:${DEFAULT_VECTOR[key]}`)
-                    .join("/")})`;
-                window.location.href =
-                    window.location.origin + window.location.pathname + defaultVector;
-            }
-        });
+        alert(`The following parameters are missing: ${missingParams.join(", ")}.\nDefault configuration will be used.`);
+
+        const defaultVector = `?vector=(${VECTOR_KEYS
+            .map((key) => `${key.toUpperCase()}:${DEFAULT_VECTOR[key]}`)
+            .join("/")})`;
+
+        window.location.href = window.location.origin + window.location.pathname + defaultVector;
+
         return false;
     }
 

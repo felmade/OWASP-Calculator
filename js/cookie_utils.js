@@ -3,15 +3,17 @@
 /**
  * Sets a mapping cookie with the given custom name and value.
  * The cookie expires in 100 years, effectively making it permanent.
+ * Automatically decodes URL-encoded characters before storing.
  *
  * @param {string} customName - The custom name for the mapping.
  * @param {string} value - The mapping query string to store.
  */
 export function setMappingCookie(customName, value) {
-    const cookieName = "mapping_" + customName;
+    const cookieName = "mapping_" + decodeURIComponent(customName.trim());
+    const decodedValue = decodeURIComponent(value.trim());
     const farFuture = new Date();
     farFuture.setFullYear(farFuture.getFullYear() + 100);
-    document.cookie = `${encodeURIComponent(cookieName)}=${encodeURIComponent(value)};expires=${farFuture.toUTCString()};path=/`;
+    document.cookie = `${encodeURIComponent(cookieName)}=${encodeURIComponent(decodedValue)};expires=${farFuture.toUTCString()};path=/`;
 }
 
 /**

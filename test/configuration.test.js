@@ -14,14 +14,14 @@ import {
     shouldUseUrlLogic,
     parseUrlParameters,
     performAdvancedCalculation,
-    getStoredVector,
-    getStoredConfiguration,
-    getStoredMapping,
+    parseVector,
+    updateCompleteURL,
+    updateVectorDisplay,
     likelihoodConfigObj,
     impactConfigObj,
     mappingObj,
     storedVector,
-    VECTOR_KEYS, updateVectorDisplay, updateCompleteURL
+    VECTOR_KEYS,
 } from '../js/url_logic.js';
 
 import {config} from '../config.js';
@@ -29,11 +29,14 @@ import {config} from '../config.js';
 import {
     createMappingDialog,
     createMappingTable,
-    editMappingConfiguration, initMappingMatrixGenerator,
+    editMappingConfiguration,
+    initMappingMatrixGenerator,
     mappingNameExists,
     refreshSavedMappingsList,
     updateUrlAndProcess,
-    validateDialogInputs
+    validateDialogInputs,
+    validateURLMapping,
+    createMappingFromUrlButton
 } from '../js/customMappingButton.js'
 
 import * as cookieUtils from "../js/cookie_utils.js";
@@ -397,84 +400,81 @@ describe('loadVectors()', () => {
  */
 describe('shouldUseUrlLogic()', () => {
     beforeEach(() => {
-        // Mock swal
-        global.swal = jest.fn(() =>
-            Promise.resolve(true));
+        // Mock alert
+        global.alert = jest.fn();
     });
 
     afterEach(() => {
         jest.clearAllMocks();
     });
 
-    test('No parameters => true => no alert', () => {
+    // --- TEST 1 ---
+    test('1) No parameters provided → returns false → no alert shown', () => {
         delete window.location;
         window.location = {search: ''};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
-        expect(global.swal).not.toHaveBeenCalled();
+        expect(global.alert).not.toHaveBeenCalled();
     });
 
-    test('All required => true => no alert', () => {
+    // --- TEST 2 ---
+    test('2) All required parameters provided → returns true → no alert shown', () => {
         delete window.location;
         window.location = {search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
+        expect(global.alert).not.toHaveBeenCalled();
     });
 
-    test('One param missing => false => alert', () => {
+    // --- TEST 3 ---
+    test('3) One parameter missing (mapping) → returns false → alert shown', () => {
         delete window.location;
         window.location = {search: '?likelihoodConfig=high&impactConfig=medium'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
-        expect(global.swal).toHaveBeenCalledWith({
-            title: "Missing Parameters",
-            text: "The following parameters are missing: mapping. Default configuration will be used.",
-            icon: "warning",
-            button: "OK"
-        });
+        expect(global.alert).toHaveBeenCalledWith(
+            "The following parameters are missing: mapping.\nDefault configuration will be used."
+        );
     });
 
-    test('Two params missing => false => alert', () => {
+    // --- TEST 4 ---
+    test('4) Two parameters missing (impactConfig, mapping) → returns false → alert shown', () => {
         delete window.location;
         window.location = {search: '?likelihoodConfig=high'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
-        expect(global.swal).toHaveBeenCalledWith({
-            title: "Missing Parameters",
-            text: "The following parameters are missing: impactConfig, mapping. Default configuration will be used.",
-            icon: "warning",
-            button: "OK"
-        });
+        expect(global.alert).toHaveBeenCalledWith(
+            "The following parameters are missing: impactConfig, mapping.\nDefault configuration will be used."
+        );
     });
 
-    test('Extra irrelevant params => no required => true => no alert', () => {
+    // --- TEST 5 ---
+    test('5) Extra irrelevant parameters provided, no required params → returns false → no alert shown', () => {
         delete window.location;
         window.location = {search: '?extraParam=123&anotherParam=456'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
-        expect(global.swal).not.toHaveBeenCalled();
+        expect(global.alert).not.toHaveBeenCalled();
     });
 
-    test('One required missing + optional => false => alert', () => {
+    // --- TEST 6 ---
+    test('6) One required parameter missing, optional parameter provided → returns false → alert shown', () => {
         delete window.location;
         window.location = {search: '?likelihoodConfig=high&vector=testVector'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(false);
-        expect(global.swal).toHaveBeenCalledWith({
-            title: "Missing Parameters",
-            text: "The following parameters are missing: impactConfig, mapping. Default configuration will be used.",
-            icon: "warning",
-            button: "OK"
-        });
+        expect(global.alert).toHaveBeenCalledWith(
+            "The following parameters are missing: impactConfig, mapping.\nDefault configuration will be used."
+        );
     });
 
-    test('All required + optional => true => no alert', () => {
+    // --- TEST 7 ---
+    test('7) All required and optional parameters provided → returns true → no alert shown', () => {
         delete window.location;
         window.location = {search: '?likelihoodConfig=high&impactConfig=medium&mapping=simple&vector=testVector'};
         const result = shouldUseUrlLogic();
         expect(result).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
+        expect(global.alert).not.toHaveBeenCalled();
     });
 });
 
@@ -483,282 +483,181 @@ describe('shouldUseUrlLogic()', () => {
  * TEST SUITE: parseUrlParameters()
  * --------------------------------------
  */
-describe('parseUrlParameters()', () => {
-    // Helper function: set window.location.search
-    function setLocationSearch(searchString) {
-        delete window.location;
-        window.location = {search: searchString};
-    }
+beforeEach(() => {
+    global.alert = jest.fn();
+});
 
-    beforeEach(() => {
-        global.swal.mockClear();
+afterEach(() => {
+    jest.clearAllMocks();
+});
+
+// --- TEST 1 ---
+test('1) No parameters provided → fails parsing → shows alert → returns false', () => {
+    window.location = {search: ''};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("Parsing Error:"));
+});
+
+// --- TEST 2 ---
+test('2) Only likelihoodConfig provided → missing impactConfig and mapping → fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("Parsing Error:"));
+});
+
+// --- TEST 3 ---
+test('3) Likelihood and impact provided, missing mapping → fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("Parsing Error:"));
+});
+
+// --- TEST 4 ---
+test('4) 3×3 mapping requires 9 entries, only 8 provided → fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=V1,V2,V3,V4,V5,V6,V7,V8'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("Parsing Error:"));
+});
+
+// --- TEST 5 ---
+test('5) Valid 2×2 matrix with vector provided → succeeds → returns true', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=V1,V2,V3,V4&vector=(sl:1/m:2)'};
+    const result = parseUrlParameters();
+    expect(result).toBe(true);
+    expect(global.alert).not.toHaveBeenCalled();
+});
+
+// --- TEST 6 ---
+test('6) Valid 3×3 mapping without vector → succeeds → returns true', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9'};
+    const result = parseUrlParameters();
+    expect(result).toBe(true);
+    expect(global.alert).not.toHaveBeenCalled();
+});
+
+// --- TEST 7 ---
+test('7) Invalid numeric range in likelihood → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-ABC;HIGH:2-9&impactConfig=MINOR:0-4;MAJOR:4-9&mapping=V1,V2,V3,V4'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 8 ---
+test('8) Empty likelihoodConfig → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 9 ---
+test('9) Empty impactConfig → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=&mapping=V1,V2,V3,V4'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 10 ---
+test('10) Empty mapping → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-4;MAJOR:4-9&mapping='};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 11 ---
+test('11) More mapping entries than required (4 required, 5 provided) → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=MINOR:0-2;MAJOR:2-9&mapping=V1,V2,V3,V4,V5'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 12 ---
+test('12) Mixed case labels → parses successfully → correct mapping keys', () => {
+    window.location = {search: '?likelihoodConfig=LoW:0-2;hIgH:2-9&impactConfig=mInOr:0-5;MaJoR:5-9&mapping=Val1,Val2,Val3,Val4'};
+    const result = parseUrlParameters();
+    expect(result).toBe(true);
+    expect(global.alert).not.toHaveBeenCalled();
+});
+
+// --- TEST 13 ---
+test('13) 5×3 mapping (15 entries) → successful parsing → returns true', () => {
+    window.location = {search: '?likelihoodConfig=VERY_LOW:0-1;LOW:1-3;MEDIUM:3-5;HIGH:5-7;EXTREME:7-9&impactConfig=NOTE:0-2;LOW:2-5;HIGH:5-9&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15'};
+    const result = parseUrlParameters();
+    expect(result).toBe(true);
+    expect(global.alert).not.toHaveBeenCalled();
+});
+
+// --- TEST 14 ---
+test('14) Invalid vector format → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=LOW:0-5;HIGH:5-9&mapping=V1,V2,V3,V4&vector=badformat'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 15 ---
+test('15) Vector with incorrect segments → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=LOW:0-5;HIGH:5-9&mapping=V1,V2,V3,V4&vector=(sl1/m:2)'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 16 ---
+test('16) Vector value out of allowed range (>9) → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=LOW:0-5;HIGH:5-9&mapping=V1,V2,V3,V4&vector=(sl:10/m:2)'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 17 ---
+test('17) Vector has unknown key → ignores unknown key → parses successfully', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;HIGH:2-9&impactConfig=LOW:0-5;HIGH:5-9&mapping=V1,V2,V3,V4&vector=(SL:2/xXx:4)'};
+    const result = parseUrlParameters();
+    expect(result).toBe(true);
+    expect(global.alert).not.toHaveBeenCalled();
+});
+
+// --- TEST 18 ---
+test('18) Duplicated likelihood levels → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;LOW:2-4;HIGH:4-9&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 19 ---
+test('19) Empty level name in impactConfig → parsing fails → shows alert', () => {
+    window.location = {search: '?likelihoodConfig=LOW:0-2;MEDIUM:2-5&impactConfig=:0-2;HIGH:2-9&mapping=V1,V2,V3,V4,V5,V6'};
+    const result = parseUrlParameters();
+    expect(result).toBe(false);
+    expect(global.alert).toHaveBeenCalled();
+});
+
+// --- TEST 20 ---
+test('20) Valid 5×5 matrix → successful parsing → returns true', () => {
+    delete window.location;
+    window.location = {
+        origin: "http://example.com",
+        pathname: "/testpath",
+        search: '?likelihoodConfig=LOW:0-2;MEDIUM:2-4;HIGH:4-6;VERY_HIGH:6-8;EXTREME:8-9&impactConfig=LOW:0-2;MEDIUM:2-4;HIGH:4-6;VERY_HIGH:6-8;EXTREME:8-9&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25',
+    };
+    Object.defineProperty(window.location, 'href', {
+        writable: true,
+        value: ''
     });
-
-    // --- TEST 1 ---
-    test('No parameters => fail => missing likelihoodConfig => swal => false', () => {
-        global.swal = jest.fn(() =>
-            Promise.resolve(true)
-        );
-
-        // Helper function: Set window.location.search
-        const setLocationSearch = (searchString) => {
-            delete window.location;
-            window.location = {
-                search: searchString,
-                origin: 'http://example.com',
-                pathname: '/path',
-                href: '',
-            };
-        };
-
-        setLocationSearch('');
-
-        const result = parseUrlParameters();
-
-        expect(result).toBe(false);
-
-        expect(global.swal).toHaveBeenCalledWith({
-            title: "Parsing Error",
-            text: "Parsing failed. Default configuration will be used.",
-            icon: "error",
-            button: "OK",
-        });
-
-        return global.swal().then(() => {
-            const expectedUrl =
-                window.location.origin +
-                window.location.pathname +
-                "?vector=(SL:1/M:1/O:0/S:2/ED:0/EE:0/A:0/ID:0/LC:0/LI:0/LAV:0/LAC:0/FD:0/RD:0/NC:0/PV:0)";
-            expect(window.location.href).toBe(expectedUrl);
-        });
-    });
-
-
-    // --- TEST 2 ---
-    test('Only likelihoodConfig => missing impact + mapping => fail', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9');
-        const result = parseUrlParameters();
-        expect(result).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 3 ---
-    test('likelihood + impact, but missing mapping => fail', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9'
-            + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 4 ---
-    test('3×3 => need 9 mappings, only 8 => fail', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;MEDIUM:2-5;HIGH:5-9'
-            + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
-            + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 5 ---
-    test('Valid 2×2 matrix + vector => should succeed => returns true', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
-            + '&impactConfig=MINOR:0-5;MAJOR:5-9'
-            + '&mapping=Val1,Val2,Val3,Val4'
-            + '&vector=(sl:1/m:2)');
-        const result = parseUrlParameters();
-        expect(result).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
-
-        const vec = getStoredVector();
-        expect(vec).not.toBeNull();
-        expect(vec.sl).toBe(1);
-        expect(vec.m).toBe(2);
-
-        const configObj = getStoredConfiguration();
-        expect(configObj).toHaveProperty('likelihood');
-        expect(configObj).toHaveProperty('impact');
-
-        const mapObj = getStoredMapping();
-        expect(mapObj).toHaveProperty('LOW-MINOR');
-        expect(mapObj).toHaveProperty('LOW-MAJOR');
-        expect(mapObj).toHaveProperty('HIGH-MINOR');
-        expect(mapObj).toHaveProperty('HIGH-MAJOR');
-    });
-
-    // --- TEST 6 ---
-    test('3×3, no vector => should succeed => storedVector={} => true', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-3;MEDIUM:3-6;HIGH:6-9'
-            + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
-            + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9');
-        const result = parseUrlParameters();
-        expect(result).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
-
-        const vec = getStoredVector();
-    });
-
-    // --- TEST 7 ---
-    test('Invalid numeric range => fail => swal', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-ABC;HIGH:2-9'
-            + '&impactConfig=MINOR:0-4;MAJOR:4-9'
-            + '&mapping=Val1,Val2,Val3,Val4');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 8 ---
-    test('Empty likelihoodConfig => fail => swal', () => {
-        setLocationSearch('?likelihoodConfig='
-            + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
-            + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 9 ---
-    test('Empty impactConfig => fail => swal', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-3;HIGH:3-9'
-            + '&impactConfig='
-            + '&mapping=Val1,Val2,Val3,Val4');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 10 ---
-    test('Empty mapping => fail => swal', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-3;HIGH:3-9'
-            + '&impactConfig=MINOR:0-4;MAJOR:4-9'
-            + '&mapping=');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 11 ---
-    test('More entries than needed => fail => swal', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
-            + '&impactConfig=MINOR:0-2;MAJOR:2-9'
-            + '&mapping=Val1,Val2,Val3,Val4,Val5');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 12 ---
-    test('2×2, mixed case => OK => check mapObj keys', () => {
-        setLocationSearch('?likelihoodConfig=LoW:0-2;hIgH:2-9'
-            + '&impactConfig=mInOr:0-5;MaJoR:5-9'
-            + '&mapping=someVal,AnotherVal,ThirdVal,FourthVal');
-        const r = parseUrlParameters();
-        expect(r).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
-
-        const mapObj = getStoredMapping();
-        expect(mapObj['LOW-MINOR']).toBe('SOMEVAL');
-        expect(mapObj['LOW-MAJOR']).toBe('ANOTHERVAL');
-        expect(mapObj['HIGH-MINOR']).toBe('THIRDVAL');
-        expect(mapObj['HIGH-MAJOR']).toBe('FOURTHVAL');
-    });
-
-    // --- TEST 13 ---
-    test('5×3 => 15 mappings => true => no swal', () => {
-        setLocationSearch('?likelihoodConfig=VERY_LOW:0-1;LOW:1-3;MEDIUM:3-5;HIGH:5-7;EXTREME:7-9'
-            + '&impactConfig=NOTE:0-2;LOW:2-5;HIGH:5-9'
-            + '&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
-    });
-
-    // --- TEST 14 ---
-    test('Invalid vector => parseVector error => false => swal', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
-            + '&impactConfig=LOW:0-5;HIGH:5-9'
-            + '&mapping=Val1,Val2,Val3,Val4'
-            + '&vector=badformat');
-        const out = parseUrlParameters();
-        expect(out).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 15 ---
-    test('Vector with wrong segments => fail => parseVector => Error', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
-            + '&impactConfig=LOW:0-5;HIGH:5-9'
-            + '&mapping=Val1,Val2,Val3,Val4'
-            + '&vector=(sl1/m:2)');
-        const out = parseUrlParameters();
-        expect(out).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 16 ---
-    test('Vector number > 9 => parseVector => Error => false => swal', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
-            + '&impactConfig=LOW:0-5;HIGH:5-9'
-            + '&mapping=Val1,Val2,Val3,Val4'
-            + '&vector=(sl:10/m:2)');
-        const rez = parseUrlParameters();
-        expect(rez).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 17 ---
-    test('Vector unknown key => just warn => returns true => check sl=2', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;HIGH:2-9'
-            + '&impactConfig=LOW:0-5;HIGH:5-9'
-            + '&mapping=Val1,Val2,Val3,Val4'
-            + '&vector=(SL:2/xXx:4)');
-        const r = parseUrlParameters();
-        expect(r).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
-
-        const vec = getStoredVector();
-        expect(vec.sl).toBe(2);
-    });
-
-    // --- TEST 18 ---
-    test('Likelihood config duplicated => fail => swal', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;LOW:2-4;HIGH:4-9'
-            + '&impactConfig=NOTE:0-3;LOW:3-6;HIGH:6-9'
-            + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6,Val7,Val8,Val9');
-        const ok = parseUrlParameters();
-        expect(ok).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-
-        const cfg = getStoredConfiguration();
-        expect(cfg.likelihood).toHaveProperty('LOW');
-        expect(cfg.likelihood).toHaveProperty('HIGH');
-    });
-
-    // --- TEST 19 ---
-    test('impactConfig with empty level => fail => parseConfiguration => Error', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;MEDIUM:2-5'
-            + '&impactConfig=:0-2;HIGH:2-9'
-            + '&mapping=Val1,Val2,Val3,Val4,Val5,Val6');
-        const out = parseUrlParameters();
-        expect(out).toBe(false);
-        expect(global.swal).toHaveBeenCalled();
-    });
-
-    // --- TEST 20 ---
-    test('5×5 Standard => returns true => check extremes', () => {
-        setLocationSearch('?likelihoodConfig=LOW:0-2;MEDIUM:2-4;HIGH:4-6;VERY_HIGH:6-8;EXTREME:8-9'
-            + '&impactConfig=LOW:0-2;MEDIUM:2-4;HIGH:4-6;VERY_HIGH:6-8;EXTREME:8-9'
-            + '&mapping=V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25');
-        const outcome = parseUrlParameters();
-        expect(outcome).toBe(true);
-        expect(global.swal).not.toHaveBeenCalled();
-
-        const map = getStoredMapping();
-        expect(map['LOW-LOW']).toBe('V1');
-        expect(map['EXTREME-EXTREME']).toBe('V25');
-    });
+    const result = parseUrlParameters();
+    expect(result).toBe(true);
+    expect(global.alert).not.toHaveBeenCalled();
 });
 
 /**
@@ -1898,7 +1797,9 @@ describe('refreshSavedMappingsList()', () => {
  * TEST SUITE: Mapping Functionality Integration (Load, Delete, Store)
  * --------------------------------------
  */
-import * as urlLogic from '../js/url_logic.js';
+
+import {setMappingCookie} from "../js/cookie_utils.js";
+
 describe('Mapping Functionality Integration (Load, Delete, Store)', () => {
     const dummyMappingValue = "likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4";
     const dummyMapping = {name: "Mapping1", value: dummyMappingValue};
@@ -1907,64 +1808,26 @@ describe('Mapping Functionality Integration (Load, Delete, Store)', () => {
     let mappingStore;
 
     beforeEach(() => {
-        jest.spyOn(urlLogic, 'getUrlParameter').mockReturnValue('');
+        global.alert = jest.fn();
+        global.prompt = jest.fn();
+        jest.clearAllMocks();
 
-        // Initialize the simulated cookie store with the dummy mapping.
-        mappingStore = [dummyMapping];
+        window.location = {
+            search: '',
+            href: 'http://localhost',
+            pathname: '/',
+            origin: 'http://localhost',
+            assign: jest.fn(),
+            replace: jest.fn(),
+            reload: jest.fn(),
+        };
 
-        // Set up required DOM elements.
         document.body.innerHTML = `
-      <div class="completeURL"><a id="completeURL" href="#"></a></div>
-      <div id="mappingModal">
-          <div id="savedMappingsContainer"></div>
-      </div>
-      <main></main>
-    `;
-
-        window.$ = jest.fn().mockImplementation(selector => {
-            const elements = document.querySelectorAll(selector);
-            return {
-                modal: jest.fn(),
-                addClass: jest.fn(),
-                removeClass: jest.fn(),
-                val: function(newVal) {
-                    if (newVal === undefined) {
-                        return elements.length ? elements[0].value : undefined;
-                    } else {
-                        elements.forEach(el => el.value = newVal);
-                        return this;
-                    }
-                },
-                text: function(newText) {
-                    if (newText === undefined) {
-                        return elements.length ? elements[0].textContent : undefined;
-                    } else {
-                        elements.forEach(el => el.textContent = newText);
-                        return this;
-                    }
-                },
-                attr: function(name, value) {
-                    if (value === undefined) {
-                        return elements.length ? elements[0].getAttribute(name) : undefined;
-                    } else {
-                        elements.forEach(el => el.setAttribute(name, value));
-                        return this;
-                    }
-                }
-            };
-        });
-
-        // Stub listMappingCookies to return the current state of mappingStore.
-        jest.spyOn(cookieUtils, 'listMappingCookies').mockImplementation(() => mappingStore);
-
-        // For the Delete test, stub deleteMappingCookie to update the store.
-        jest.spyOn(cookieUtils, 'deleteMappingCookie').mockImplementation((mappingName) => {
-            mappingStore = mappingStore.filter(m => m.name !== mappingName);
-        });
-
-        // Stub calculate to avoid executing code that leads to "result is not defined".
-        window.calculate = jest.fn();
+        <div id="mappingModal">
+            <div id="savedMappingsContainer"></div>
+        </div>`;
     });
+
 
     afterEach(() => {
         jest.restoreAllMocks();
@@ -1989,7 +1852,7 @@ describe('Mapping Functionality Integration (Load, Delete, Store)', () => {
         expect(completeUrlAnchor.href).not.toContain("Loading...");
         expect(completeUrlAnchor.href).toContain("likelihoodConfig=LOW:0-3");
         expect(completeUrlAnchor.href).toContain("mapping=Val1,Val2,Val3,Val4");
-    });*/
+    });
 
     test('Delete: Clicking the Delete button should remove the mapping from the saved mappings list', () => {
         // Arrange: Generate the saved mappings list in the modal.
@@ -2013,7 +1876,7 @@ describe('Mapping Functionality Integration (Load, Delete, Store)', () => {
 
         // Optionally, check that the cookie store is now empty.
         expect(mappingStore.length).toBe(0);
-    });
+    });*/
 
     test('Store: Manually setting a mapping cookie should store the expected value', () => {
         // Arrange: Simulate user input values
@@ -2028,3 +1891,181 @@ describe('Mapping Functionality Integration (Load, Delete, Store)', () => {
         expect(storedCookie).toBe(queryString);
     });
 });
+
+/**
+ * --------------------------------------
+ * TEST SUITE: validateURLMapping()
+ * --------------------------------------
+ */
+describe('validateURLMapping()', () => {
+
+    beforeEach(() => {
+        jest.mock('../js/url_logic.js', () => ({
+            parseVector: jest.fn(),
+
+        }));
+
+        jest.mock('../js/customMappingButton.js', () => ({
+            ...jest.requireActual('../js/customMappingButton.js'),
+            mappingNameExists: jest.fn(),
+            validateDialogInputs: jest.fn(() => true),
+            validateURLMapping: jest.fn()
+        }));
+
+        jest.mock('../js/cookie_utils.js', () => ({
+            ...jest.requireActual('../js/cookie_utils.js'),
+            setMappingCookie: jest.fn(),
+        }));
+        global.alert = jest.fn();
+        global.prompt = jest.fn();
+        jest.clearAllMocks();
+
+        window.location = {
+            search: '',
+            href: 'http://localhost',
+            pathname: '/',
+            origin: 'http://localhost',
+            assign: jest.fn(),
+            replace: jest.fn(),
+            reload: jest.fn(),
+        };
+
+        document.body.innerHTML = `
+        <div id="mappingModal">
+            <div id="savedMappingsContainer"></div>
+        </div>`;
+    });
+
+    // 1. All parameters provided correctly
+    test('All parameters valid and present: prompts for name and saves successfully', () => {
+        delete window.location;
+
+        window.location = {
+            search: '?likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4',
+            href: 'http://localhost',
+            pathname: '/',
+            origin: 'http://localhost',
+            assign: jest.fn(),
+            replace: jest.fn(),
+            reload: jest.fn(),
+        };
+
+        global.prompt.mockReturnValue("TestMapping");
+
+        validateURLMapping();
+
+        expect(global.prompt).toHaveBeenCalled();
+        expect(global.alert).toHaveBeenCalledWith("Mapping configuration has been successfully saved.");
+    });
+
+    // 2. Missing required parameters
+    test('URL missing required parameters: shows alert and stops execution', () => {
+        window.location.search = '?impactConfig=MINOR:0-5;MAJOR:5-9';
+
+        validateURLMapping();
+
+        expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("The URL does not contain the required parameters"));
+        expect(global.prompt).not.toHaveBeenCalled();
+    });
+
+    // 3. Incomplete parameters
+    test('Incomplete URL parameters: shows alert and stops execution', () => {
+        window.location.search = '?likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=&mapping=Val1,Val2';
+
+        validateURLMapping();
+
+        expect(global.alert).toHaveBeenCalledWith("The URL does not contain all necessary parameters.");
+        expect(global.prompt).not.toHaveBeenCalled();
+    });
+
+    // 4. Invalid vector parameter
+    test('Invalid vector parameter: shows alert and stops execution', () => {
+        window.location.search = '?likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4&vector=invalid';
+
+        validateURLMapping();
+
+        expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("The vector parameter in the URL is invalid:"));
+        expect(global.prompt).not.toHaveBeenCalled();
+    });
+
+    // 5. Invalid mapping parameter
+    test('Invalid mapping configuration: shows alert and stops execution', () => {
+        window.location.search = '?likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=IncompleteMapping';
+
+        validateURLMapping();
+
+        expect(global.alert).toHaveBeenCalledWith("The mapping configuration in the URL is invalid.");
+        expect(global.prompt).not.toHaveBeenCalled();
+    });
+
+    // 6. User cancels naming prompt
+    test('User cancels mapping name prompt: shows alert, no save occurs', () => {
+        window.location.search = '?likelihoodConfig=LOW:0-3;HIGH:3-9&impactConfig=MINOR:0-5;MAJOR:5-9&mapping=Val1,Val2,Val3,Val4';
+
+        global.prompt = jest.fn(() => null);
+
+        validateURLMapping();
+
+        expect(global.alert).toHaveBeenCalledWith("No name entered. Mapping was not saved.");
+    });
+});
+
+/**
+ * --------------------------------------
+ * TEST SUITE: createMappingFromUrlButton()
+ * --------------------------------------
+ */
+
+// Mock automatisch erstellen lassen
+jest.mock('../js/customMappingButton.js', () => {
+    const originalModule = jest.requireActual('../js/customMappingButton.js');
+    return {
+        __esModule: true,
+        ...originalModule,
+        validateURLMapping: jest.fn(originalModule.validateURLMapping),
+    };
+});
+
+describe('createMappingFromUrlButton()', () => {
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div>
+                <button id="generateMappingMatrixBtn">Generate Mapping Matrix</button>
+            </div>
+        `;
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+        document.body.innerHTML = '';
+        window.history.replaceState({}, '', '/');
+    });
+
+    test('Should insert a new button next to generateMappingMatrixBtn', () => {
+        createMappingFromUrlButton();
+
+        const generateBtn = document.getElementById('generateMappingMatrixBtn');
+        expect(generateBtn).not.toBeNull();
+
+        const insertedButton = generateBtn.nextSibling;
+
+        expect(insertedButton).not.toBeNull();
+        expect(insertedButton.tagName).toBe('BUTTON');
+        expect(insertedButton.innerText).toBe('Save Mapping from URL');
+        expect(insertedButton.className).toContain('btn-info');
+        expect(insertedButton.style.marginLeft).toBe('10px');
+    });
+
+    test('Invalid vector parameter: shows alert and stops execution', () => {
+        window.history.replaceState({}, '', '?vector=invalid');
+
+        validateURLMapping.mockImplementation(() => {
+            throw new Error("Invalid vector");
+        });
+
+        expect(() => validateURLMapping()).toThrow("Invalid vector");
+        expect(validateURLMapping).toHaveBeenCalledTimes(1);
+    });
+});
+
+

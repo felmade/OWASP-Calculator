@@ -1,4 +1,4 @@
-import {getUrlParameter, updateCompleteURL, updateVectorDisplay} from "./url_logic.js";
+import {getUrlParameter, updateCompleteURL, updateVectorDisplay, parseVector} from "./url_logic.js";
 import { calculate } from "./script.js";
 import {setMappingCookie, deleteMappingCookie, listMappingCookies, getMappingCookie} from "./cookie_utils.js";
 
@@ -393,6 +393,15 @@ export function updateUrlAndProcess(finalQueryString) {
  * @param {number} numImpact - Number of impact levels.
  * @returns {string|null} - Final query string (without leading "?") or null if validation fails.
  */
+/**
+ * Validates the inputs in the modal and returns the final query string if valid.
+ * Ensures that Likelihood and Impact cover the range 0-9 continuously (overlaps allowed).
+ *
+ * @param {HTMLElement} modal - The modal element.
+ * @param {number} numLikelihood - Number of likelihood levels.
+ * @param {number} numImpact - Number of impact levels.
+ * @returns {string|null} - Final query string (without leading "?") or null if validation fails.
+ */
 export function validateDialogInputs(modal, numLikelihood, numImpact) {
     const headerRegex = /^[^:]+:\d+-\d+$/;
     const mappingValues = [];
@@ -403,25 +412,6 @@ export function validateDialogInputs(modal, numLikelihood, numImpact) {
             const [min, max] = range.split("-").map(Number);
             return { label: label.trim(), min, max };
         });
-    };
-
-    const isValidContinuousRange = (ranges, type) => {
-        ranges.sort((a, b) => a.min - b.min);
-        if (ranges[0].min !== 0) {
-            alert(`${type} must start at 0.`);
-            return false;
-        }
-        if (ranges[ranges.length - 1].max !== 9) {
-            alert(`${type} must end at 9.`);
-            return false;
-        }
-        for (let i = 0; i < ranges.length - 1; i++) {
-            if (ranges[i].max < ranges[i + 1].min) {
-                alert(`${type} ranges must not have gaps. Please cover every value from 0 to 9 continuously.`);
-                return false;
-            }
-        }
-        return true;
     };
 
     // Validate row headers (Likelihood)
@@ -446,15 +436,21 @@ export function validateDialogInputs(modal, numLikelihood, numImpact) {
         }
     }
 
-    // Parse and validate likelihood ranges
+    // Parse and validate likelihood ranges using new helper with exception handling
     const likelihoodRanges = parseRanges(likelihoodHeaders);
-    if (!isValidContinuousRange(likelihoodRanges, "Likelihood")) {
+    try {
+        validateContinuousRange(likelihoodRanges, "Likelihood");
+    } catch (err) {
+        alert(err.message);
         return null;
     }
 
-    // Parse and validate impact ranges
+    // Parse and validate impact ranges using new helper with exception handling
     const impactRanges = parseRanges(impactHeaders);
-    if (!isValidContinuousRange(impactRanges, "Impact")) {
+    try {
+        validateContinuousRange(impactRanges, "Impact");
+    } catch (err) {
+        alert(err.message);
         return null;
     }
 
@@ -476,6 +472,33 @@ export function validateDialogInputs(modal, numLikelihood, numImpact) {
     const mappingStringFinal = mappingValues.join(",");
 
     return `likelihoodConfig=${likelihoodConfigString}&impactConfig=${impactConfigString}&mapping=${mappingStringFinal}`;
+}
+
+/**
+ * Checks if the given ranges cover the range 0-9 continuously (overlaps allowed).
+ * Throws an Error if validation fails.
+ *
+ * @param {Array} ranges - Array of range objects [{label, min, max}, ...].
+ * @param {string} type - Type for error messages ("Likelihood" or "Impact").
+ * @throws {Error} If ranges are not continuous and valid.
+ */
+export function validateContinuousRange(ranges, type) {
+    ranges.sort((a, b) => a.min - b.min);
+
+    if (ranges[0].min !== 0) {
+        throw new Error(`${type} must start at 0.`);
+    }
+
+    if (ranges[ranges.length - 1].max !== 9) {
+        throw new Error(`${type} must end at 9.`);
+    }
+
+    for (let i = 0; i < ranges.length - 1; i++) {
+        if (ranges[i].max < ranges[i + 1].min) {
+            throw new Error(`${type} ranges must not have gaps. Please cover every value from 0 to 9 continuously.`);
+        }
+    }
+    return true;
 }
 
 /**
@@ -601,7 +624,7 @@ export function refreshSavedMappingsList(modal) {
  * checks if the name already exists, saves the configuration in a cookie,
  * and refreshes the saved mappings list.
  */
-function validateURLMapping() {
+export function validateURLMapping() {
     // Read the query string (without the leading '?')
     const queryString = window.location.search.substring(1);
     if (!queryString.includes("likelihoodConfig") ||
@@ -615,10 +638,21 @@ function validateURLMapping() {
     const likelihoodConfig = params.get("likelihoodConfig");
     const impactConfig = params.get("impactConfig");
     const mapping = params.get("mapping");
+    const vectorParam = params.get("vector");
 
     if (!likelihoodConfig || !impactConfig || !mapping) {
         alert("The URL does not contain all necessary parameters.");
         return;
+    }
+
+    //Vector validation
+    if (vectorParam) {
+        try {
+            parseVector(vectorParam);
+        } catch (err) {
+            alert("The vector parameter in the URL is invalid:\n" + err.message);
+            return;
+        }
     }
 
     // Create a dummy container to simulate input fields for validateDialogInputs
@@ -688,7 +722,7 @@ function validateURLMapping() {
  * Creates and inserts a button next to the "Generate Mapping Matrix" button.
  * When clicked, the button triggers the validateURLMapping function.
  */
-function createMappingFromUrlButton() {
+export function createMappingFromUrlButton() {
     const generateMappingMatrixBtn = document.getElementById("generateMappingMatrixBtn");
     if (generateMappingMatrixBtn) {
         const saveMappingURLButton = document.createElement("button");
