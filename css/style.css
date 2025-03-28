@@ -1,0 +1,109 @@
+/* IMPORTS ----------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+* {box-sizing: border-box;}
+
+.classCritical { color: #FFFFFF; background-color: rgb(255, 102, 255, 0.5); font-weight: bold; border: 3px solid #FF66FF; border-radius: 5px;}
+.classHigh { color: #FFFFFF; background-color: rgba(255, 0, 0, 0.5); font-weight: bold; border: 3px solid #FF0000; border-radius: 5px;}
+.classMedium { color: #000000; background-color: rgba(255, 169, 0, 0.5); font-weight: bold; border: 3px solid #FFA900; border-radius: 5px;}
+.classLow { color: #000000; background-color: rgba(255, 255, 0, 0.5); font-weight: bold; border: 3px solid #FFFF00; border-radius: 5px;}
+.classNote { color: #000000; background-color: rgba(144, 238, 144, 0.5); font-weight: bold; border: 3px solid #90EE90; border-radius: 5px;}
+
+.risk{width: 400px; margin: 0 auto;}
+.riskChart {margin-bottom: 10px;}
+
+main.blurred {
+	filter: blur(5px);
+	transition: filter 0.3s ease;
+}
+
+.modal, .modal-dialog, .modal-content {
+	filter: none !important;
+}
+
+.modal-dialog {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 90vw !important;
+	margin: auto;
+}
+
+#modal-dialog-severity {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 50vw !important;
+	margin: auto;
+}
+
+.modal-content {
+	width: 60%;
+}
+
+h1 {font-weight: bold;}
+section {padding: 10px;}
+.row {display: flex;}
+.row > section {flex: 1;}
+.nomargin {margin: 0;}
+
+body {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: 'Poppins', sans-serif;
+	padding: 0px;
+	margin: 0;
+	min-height: 100vh;
+	font-size: 14px;
+}
+
+main {
+	max-width: 1200px;
+  margin: auto;
+  width: 1200px;
+  text-align: center;
+}
+
+dialog, .modal-content {
+	border-radius: 10px !important;
+	overflow: hidden;
+}
+
+dialog button.btn, .modal-content button.btn {
+	font-family: 'Poppins', sans-serif;
+	font-size: 16px;
+	font-weight: 500;
+	padding: 10px 20px;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background-color 0.3s ease;
+	border: none;
+	outline: none;
+	margin: 10px;
+}
+
+dialog button.btn-success, .modal-content button.btn-success {
+	background-color: #28a745;
+	color: white;
+}
+
+dialog button.btn-success:hover, .modal-content button.btn-success:hover {
+	background-color: #218838;
+}
+
+dialog button.btn-danger, .modal-content button.btn-danger {
+	background-color: #dc3545;
+	color: white;
+}
+
+dialog button.btn-danger:hover, .modal-content button.btn-danger:hover {
+	background-color: #c82333;
+}
+
+/* MEDIA QUERIES ----------------------- */
+@media screen and (max-width: 576px) {
+	.row {
+		flex-direction: column;
+	}
+}
