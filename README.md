@@ -1,3 +1,50 @@
+## How to Use the OWASP Risk Assessment Calculator (User Interface)
+
+The OWASP Risk Assessment Calculator helps you easily create and manage risk assessment matrices directly in your browser. Here's a simple explanation of what you can do and how:
+
+### 1. Creating a Custom Risk Matrix
+
+- **Click on "Generate Mapping Matrix"**
+  - A dialog appears allowing you to set up your own matrix.
+  - Choose how many risk levels you'd like for likelihood (probability) and impact (severity). You can choose up to 5 levels each.
+
+- **Fill in your matrix**
+  - Provide clear names and numeric ranges for each likelihood and impact level (for example: "Low:0-3" or "High:6-9").
+  - For each combination of likelihood and impact, assign an appropriate risk level (e.g., "Medium" or "Critical").
+
+- **Save your matrix**
+  - Optionally give your new matrix a memorable name.
+  - Once confirmed, your custom matrix is saved and ready to use immediately.
+
+### 2. Managing Your Saved Matrices
+
+Your saved risk matrices can easily be managed:
+
+- **Load:** Quickly activate any saved risk matrix to use it for your assessments.
+- **Edit:** Modify your existing matrix anytime you need to update your definitions or thresholds.
+- **Delete:** Remove matrices you no longer need with a simple click.
+
+### 3. Sharing and Importing Matrices via URL
+
+- **Share your matrix:** Your custom matrices can be shared easily through URLs. When you create a matrix, the URL automatically updates, so you can copy and send it to colleagues.
+- **Import from URL:** If you receive a URL from a colleague:
+  - Use the **"Save Mapping from URL"** button to load and verify the configuration.
+  - Provide a name, and it will automatically be saved among your matrices.
+
+### 4. Error Prevention and Guidance
+
+- The tool automatically checks your inputs to ensure there are no gaps or mistakes in your risk matrix.
+- If there's an issue, you'll see clear messages explaining how to fix it.
+
+### 5. Easy-to-Use Interface
+
+- Dialog windows guide you step-by-step through the matrix creation process.
+- The background becomes blurred when a dialog is open, helping you stay focused.
+- Closing or cancelling is easy and clearly indicated.
+
+This practical tool makes risk assessments clear, shareable, and intuitive, simplifying security risk evaluation tasks for your team.
+
+
 # OWASP Risk Assessment Calculator – Configuration and Standard Logic
 
 This document explains the **default logic** of the OWASP Risk Assessment Calculator and how it can be extended using **URL-based configuration**.
